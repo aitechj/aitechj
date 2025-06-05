@@ -10,7 +10,15 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '12');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    let query = db.select({
+    const conditions = [];
+    if (category) {
+      conditions.push(eq(topics.category, category));
+    }
+    if (difficulty) {
+      conditions.push(eq(topics.difficultyLevel, parseInt(difficulty)));
+    }
+
+    const baseQuery = db.select({
       id: topics.id,
       title: topics.title,
       description: topics.description,
@@ -22,19 +30,9 @@ export async function GET(request: NextRequest) {
       createdAt: topics.createdAt,
     }).from(topics);
 
-    const conditions = [];
-    if (category) {
-      conditions.push(eq(topics.category, category));
-    }
-    if (difficulty) {
-      conditions.push(eq(topics.difficultyLevel, parseInt(difficulty)));
-    }
-
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const topicsList = await query
+    const topicsList = await (conditions.length > 0 
+      ? baseQuery.where(and(...conditions))
+      : baseQuery)
       .limit(limit)
       .offset(offset)
       .orderBy(desc(topics.createdAt));

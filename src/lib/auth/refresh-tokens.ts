@@ -51,3 +51,19 @@ export async function validateRefreshToken(token: string): Promise<string | null
 export async function cleanupExpiredTokens(): Promise<void> {
   await db.delete(refreshTokens).where(lt(refreshTokens.expiresAt, new Date()));
 }
+
+export async function verifyRefreshToken(userId: string, token: string): Promise<boolean> {
+  const result = await db
+    .select({ id: refreshTokens.id })
+    .from(refreshTokens)
+    .where(
+      and(
+        eq(refreshTokens.userId, userId),
+        eq(refreshTokens.tokenHash, token),
+        gt(refreshTokens.expiresAt, new Date())
+      )
+    )
+    .limit(1);
+
+  return result.length > 0;
+}

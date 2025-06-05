@@ -35,8 +35,10 @@ export function validateCSRFToken(request: NextRequest): boolean {
   return cookieToken === hashedHeaderToken;
 }
 
-export function requireCSRF(handler: (req: NextRequest) => Promise<NextResponse>) {
-  return async (request: NextRequest): Promise<NextResponse> => {
+export function requireCSRF<T extends any[]>(
+  handler: (req: NextRequest, ...args: T) => Promise<NextResponse>
+) {
+  return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       if (!validateCSRFToken(request)) {
         return NextResponse.json(
@@ -46,6 +48,6 @@ export function requireCSRF(handler: (req: NextRequest) => Promise<NextResponse>
       }
     }
 
-    return handler(request);
+    return handler(request, ...args);
   };
 }

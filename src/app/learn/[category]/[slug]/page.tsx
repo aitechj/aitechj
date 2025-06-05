@@ -55,14 +55,14 @@ export async function generateMetadata({ params }: TopicPageProps): Promise<Meta
     keywords: Array.isArray(topic.tags) ? topic.tags.join(', ') : '',
     openGraph: {
       title: topic.metaTitle || topic.title,
-      description: topic.metaDescription || topic.description,
+      description: topic.metaDescription || topic.description || undefined,
       type: 'article',
       url: `/learn/${params.category}/${params.slug}`,
     },
     twitter: {
       card: 'summary_large_image',
       title: topic.metaTitle || topic.title,
-      description: topic.metaDescription || topic.description,
+      description: topic.metaDescription || topic.description || undefined,
     },
     alternates: {
       canonical: `/learn/${params.category}/${params.slug}`,

@@ -89,3 +89,20 @@ export function decodeJWT(token: string): JWTPayload | null {
     return null;
   }
 }
+
+export async function getCurrentUser(): Promise<JWTPayload | null> {
+  try {
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    const token = cookieStore.get('access_token')?.value;
+    
+    if (!token) {
+      return null;
+    }
+    
+    return await verifyJWT(token);
+  } catch (error) {
+    console.error('Get current user failed:', error);
+    return null;
+  }
+}
