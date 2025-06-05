@@ -10,44 +10,19 @@ let client: any = null;
 let db: any = null;
 
 function createStubDb() {
+  const createQueryChain = () => ({
+    where: () => createQueryChain(),
+    leftJoin: () => createQueryChain(),
+    limit: () => createQueryChain(),
+    offset: () => createQueryChain(),
+    orderBy: () => createQueryChain(),
+    then: (resolve: any) => resolve([]),
+    catch: (reject: any) => Promise.resolve([])
+  });
+
   return {
     select: () => ({
-      from: () => ({
-        where: () => ({
-          limit: () => ({
-            offset: () => ({
-              orderBy: () => Promise.resolve([])
-            }),
-            orderBy: () => Promise.resolve([])
-          }),
-          orderBy: () => Promise.resolve([])
-        }),
-        leftJoin: () => ({
-          where: () => ({
-            limit: () => ({
-              offset: () => ({
-                orderBy: () => Promise.resolve([])
-              }),
-              orderBy: () => Promise.resolve([])
-            }),
-            orderBy: () => Promise.resolve([])
-          }),
-          limit: () => ({
-            offset: () => ({
-              orderBy: () => Promise.resolve([])
-            }),
-            orderBy: () => Promise.resolve([])
-          }),
-          orderBy: () => Promise.resolve([])
-        }),
-        limit: () => ({
-          offset: () => ({
-            orderBy: () => Promise.resolve([])
-          }),
-          orderBy: () => Promise.resolve([])
-        }),
-        orderBy: () => Promise.resolve([])
-      })
+      from: () => createQueryChain()
     }),
     insert: () => ({
       values: () => ({
