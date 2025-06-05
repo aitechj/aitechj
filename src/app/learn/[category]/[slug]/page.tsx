@@ -12,30 +12,39 @@ interface TopicPageProps {
 }
 
 async function getTopicData(slug: string) {
-  const topic = await db.select().from(topics).where(eq(topics.slug, slug)).limit(1);
-  
-  if (topic.length === 0) {
+  if (!process.env.DATABASE_URL) {
     return null;
   }
 
-  const topicSections = await db.select({
-    id: sections.id,
-    title: sections.title,
-    orderIndex: sections.orderIndex,
-    readingTime: sections.readingTime,
-    summary: sections.summary,
-  })
-  .from(sections)
-  .where(and(
-    eq(sections.topicId, topic[0].id),
-    eq(sections.status, 'published')
-  ))
-  .orderBy(sections.orderIndex);
+  try {
+    const topic = await db.select().from(topics).where(eq(topics.slug, slug)).limit(1);
+    
+    if (topic.length === 0) {
+      return null;
+    }
 
-  return {
-    topic: topic[0],
-    sections: topicSections
-  };
+    const topicSections = await db.select({
+      id: sections.id,
+      title: sections.title,
+      orderIndex: sections.orderIndex,
+      readingTime: sections.readingTime,
+      summary: sections.summary,
+    })
+    .from(sections)
+    .where(and(
+      eq(sections.topicId, topic[0].id),
+      eq(sections.status, 'published')
+    ))
+    .orderBy(sections.orderIndex);
+
+    return {
+      topic: topic[0],
+      sections: topicSections
+    };
+  } catch (error) {
+    console.error('Failed to fetch topic data:', error);
+    return null;
+  }
 }
 
 export async function generateMetadata({ params }: TopicPageProps): Promise<Metadata> {

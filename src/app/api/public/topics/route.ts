@@ -6,6 +6,17 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({ 
+        topics: [],
+        pagination: {
+          limit: 12,
+          offset: 0,
+          total: 0
+        }
+      });
+    }
+
     const { searchParams } = request.nextUrl;
     const category = searchParams.get('category');
     const difficulty = searchParams.get('difficulty');

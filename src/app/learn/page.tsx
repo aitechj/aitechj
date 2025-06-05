@@ -20,21 +20,30 @@ export const metadata: Metadata = {
 };
 
 async function getTopics() {
-  const topicsList = await db.select({
-    id: topics.id,
-    title: topics.title,
-    description: topics.description,
-    difficultyLevel: topics.difficultyLevel,
-    category: topics.category,
-    estimatedTime: topics.estimatedTime,
-    slug: topics.slug,
-    tags: topics.tags,
-  })
-  .from(topics)
-  .orderBy(desc(topics.createdAt))
-  .limit(12);
+  if (!process.env.DATABASE_URL) {
+    return [];
+  }
 
-  return topicsList;
+  try {
+    const topicsList = await db.select({
+      id: topics.id,
+      title: topics.title,
+      description: topics.description,
+      difficultyLevel: topics.difficultyLevel,
+      category: topics.category,
+      estimatedTime: topics.estimatedTime,
+      slug: topics.slug,
+      tags: topics.tags,
+    })
+    .from(topics)
+    .orderBy(desc(topics.createdAt))
+    .limit(12);
+
+    return topicsList;
+  } catch (error) {
+    console.error('Failed to fetch topics:', error);
+    return [];
+  }
 }
 
 export default async function LearnPage() {
