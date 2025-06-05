@@ -19,6 +19,9 @@ USE_STUB_DB=false
 USE_STUB_DB=true
 ```
 
+#### Vercel Deployment
+Vercel automatically uses stub database during build time by setting `USE_STUB_DB=true` in the build environment. This prevents database connection issues during the build process while allowing runtime database connections.
+
 ### Environment Variables
 
 Copy `.env.example` to `.env.local` and configure:
@@ -71,6 +74,8 @@ Returns paginated list of learning topics.
 }
 ```
 
+**Pagination Behavior**: Once real data is added, the API will honor `?limit=` and `?offset=` parameters for efficient pagination. The `total` count reflects the actual number of topics matching the query filters.
+
 ## Content Management
 
 ### Difficulty Levels
@@ -86,9 +91,10 @@ Content goes through three states:
 3. **Published**: Live and visible to users
 
 ### Content Versioning
-- Last 5 revisions are kept for each content item
-- Admins can rollback to any previous version
+- **Constraint**: Last 5 revisions are kept for each content item (older versions are automatically purged)
+- Admins can rollback to any of the 5 most recent versions
 - All changes are tracked with timestamps and user attribution
+- Rollback creates a new version rather than modifying existing ones
 
 ## Development Commands
 
