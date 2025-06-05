@@ -4,33 +4,13 @@ import * as schema from './schema';
 
 const isLocalDev = process.env.NODE_ENV === 'development';
 const databaseUrl = process.env.DATABASE_URL;
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || !databaseUrl;
 
 let client: any = null;
 let db: any = null;
 
-if (isLocalDev) {
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL environment variable is required for development');
-  }
-  client = postgres(databaseUrl, { 
-    prepare: false,
-    max: 1,
-    idle_timeout: 20,
-    max_lifetime: 60 * 30
-  });
-  db = drizzle(client, { schema });
-} else if (databaseUrl) {
-  client = postgres(databaseUrl, { 
-    prepare: false,
-    max: 1,
-    idle_timeout: 20,
-    max_lifetime: 60 * 30
-  });
-  db = drizzle(client, { schema });
-} else {
-  console.warn('⚠️ No DATABASE_URL set—using stub database for build');
-  client = null;
-  db = {
+function createStubDb() {
+  return {
     select: () => ({
       from: () => ({
         where: () => ({
@@ -88,6 +68,32 @@ if (isLocalDev) {
     }),
     query: () => Promise.resolve([])
   } as any;
+}
+
+function createRealDb(url: string) {
+  try {
+    const client = postgres(url, { 
+      prepare: false,
+      max: 1,
+      idle_timeout: 20,
+      max_lifetime: 60 * 30,
+      connect_timeout: 10
+    });
+    return drizzle(client, { schema });
+  } catch (error) {
+    console.warn('Failed to create database connection, using stub:', error);
+    return createStubDb();
+  }
+}
+
+if (isBuildTime) {
+  console.warn('⚠️ Build time detected—using stub database');
+  db = createStubDb();
+} else if (databaseUrl) {
+  db = createRealDb(databaseUrl);
+} else {
+  console.warn('⚠️ No DATABASE_URL set—using stub database');
+  db = createStubDb();
 }
 
 export { client, db };

@@ -6,22 +6,22 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json({ 
-        topics: [],
-        pagination: {
-          limit: 12,
-          offset: 0,
-          total: 0
-        }
-      });
-    }
-
     const { searchParams } = request.nextUrl;
     const category = searchParams.get('category');
     const difficulty = searchParams.get('difficulty');
     const limit = parseInt(searchParams.get('limit') || '12');
     const offset = parseInt(searchParams.get('offset') || '0');
+
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({ 
+        topics: [],
+        pagination: {
+          limit,
+          offset,
+          total: 0
+        }
+      });
+    }
 
     const conditions = [];
     if (category) {
@@ -60,9 +60,18 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching public topics:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch topics' },
-      { status: 500 }
-    );
+    
+    const { searchParams } = request.nextUrl;
+    const limit = parseInt(searchParams.get('limit') || '12');
+    const offset = parseInt(searchParams.get('offset') || '0');
+    
+    return NextResponse.json({ 
+      topics: [],
+      pagination: {
+        limit,
+        offset,
+        total: 0
+      }
+    });
   }
 }
