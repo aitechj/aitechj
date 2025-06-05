@@ -12,7 +12,8 @@ interface TopicPageProps {
 }
 
 async function getTopicData(slug: string) {
-  if (!process.env.DATABASE_URL) {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
     return null;
   }
 

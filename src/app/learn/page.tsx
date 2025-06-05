@@ -20,7 +20,8 @@ export const metadata: Metadata = {
 };
 
 async function getTopics() {
-  if (!process.env.DATABASE_URL) {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
     return [];
   }
 

@@ -10,7 +10,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: number;
   }> = [];
 
-  if (process.env.DATABASE_URL) {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl && !databaseUrl.includes('127.0.0.1') && !databaseUrl.includes('localhost')) {
     try {
       const { db, topics } = await import('../lib/db');
       const topicsList = await db.select({

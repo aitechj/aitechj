@@ -6,6 +6,14 @@ import { validatePrerequisites, validateTags } from '../../../../lib/content/val
 
 async function getTopics(request: NextRequest) {
   try {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+      return NextResponse.json(
+        { error: 'Database not available during build' },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -39,6 +47,14 @@ async function getTopics(request: NextRequest) {
 
 async function createTopic(request: NextRequest) {
   try {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+      return NextResponse.json(
+        { error: 'Database not available during build' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const {
       title,
