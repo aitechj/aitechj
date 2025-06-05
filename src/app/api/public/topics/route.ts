@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, topics } from '../../../../lib/db';
 import { eq, desc, and } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const category = searchParams.get('category');
     const difficulty = searchParams.get('difficulty');
     const limit = parseInt(searchParams.get('limit') || '12');
