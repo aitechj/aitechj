@@ -4,6 +4,7 @@ import * as schema from './schema';
 
 const isLocalDev = process.env.NODE_ENV === 'development';
 const databaseUrl = process.env.DATABASE_URL;
+const useStubDb = process.env.USE_STUB_DB === 'true';
 const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || !databaseUrl;
 
 let client: any = null;
@@ -63,6 +64,9 @@ function createRealDb(url: string) {
 
 if (isBuildTime) {
   console.warn('⚠️ Build time detected—using stub database');
+  db = createStubDb();
+} else if (useStubDb) {
+  console.warn('⚠️ USE_STUB_DB=true—using stub database for development');
   db = createStubDb();
 } else if (databaseUrl) {
   db = createRealDb(databaseUrl);

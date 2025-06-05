@@ -50,12 +50,19 @@ export async function GET(request: NextRequest) {
       .offset(offset)
       .orderBy(desc(topics.createdAt));
 
+    const totalQuery = db.select({ count: topics.id }).from(topics);
+    const totalResult = await (conditions.length > 0 
+      ? totalQuery.where(and(...conditions))
+      : totalQuery);
+    
+    const total = totalResult.length;
+
     return NextResponse.json({ 
       topics: topicsList,
       pagination: {
         limit,
         offset,
-        total: topicsList.length
+        total
       }
     });
   } catch (error) {
