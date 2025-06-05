@@ -6,8 +6,10 @@ import { performQualityChecks } from '../../../../../lib/content/validation';
 
 async function getSection(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const isLocalDev = process.env.NODE_ENV === 'development';
     const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+    
+    if (!isLocalDev && !databaseUrl) {
       return NextResponse.json(
         { error: 'Database not available during build' },
         { status: 503 }
@@ -35,8 +37,10 @@ async function getSection(request: NextRequest, { params }: { params: { id: stri
 
 async function updateSection(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const isLocalDev = process.env.NODE_ENV === 'development';
     const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+    
+    if (!isLocalDev && !databaseUrl) {
       return NextResponse.json(
         { error: 'Database not available during build' },
         { status: 503 }
@@ -119,8 +123,10 @@ async function updateSection(request: NextRequest, { params }: { params: { id: s
 
 async function deleteSection(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const isLocalDev = process.env.NODE_ENV === 'development';
     const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+    
+    if (!isLocalDev && !databaseUrl) {
       return NextResponse.json(
         { error: 'Database not available during build' },
         { status: 503 }

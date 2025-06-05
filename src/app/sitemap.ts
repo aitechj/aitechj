@@ -10,8 +10,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: number;
   }> = [];
 
+  const isLocalDev = process.env.NODE_ENV === 'development';
   const databaseUrl = process.env.DATABASE_URL;
-  if (databaseUrl && !databaseUrl.includes('127.0.0.1') && !databaseUrl.includes('localhost')) {
+  
+  if (isLocalDev || databaseUrl) {
     try {
       const { db, topics } = await import('../lib/db');
       const topicsList = await db.select({
@@ -20,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         updatedAt: topics.createdAt,
       }).from(topics);
 
-      topicUrls = topicsList.map((topic) => ({
+      topicUrls = topicsList.map((topic: any) => ({
         url: `${baseUrl}/learn/${topic.category}/${topic.slug}`,
         lastModified: topic.updatedAt || new Date(),
         changeFrequency: 'weekly' as const,

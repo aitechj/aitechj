@@ -6,8 +6,10 @@ import { performQualityChecks } from '../../../../lib/content/validation';
 
 async function getSections(request: NextRequest) {
   try {
+    const isLocalDev = process.env.NODE_ENV === 'development';
     const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+    
+    if (!isLocalDev && !databaseUrl) {
       return NextResponse.json(
         { error: 'Database not available during build' },
         { status: 503 }
@@ -132,8 +134,10 @@ async function getSections(request: NextRequest) {
 
 async function createSection(request: NextRequest) {
   try {
+    const isLocalDev = process.env.NODE_ENV === 'development';
     const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+    
+    if (!isLocalDev && !databaseUrl) {
       return NextResponse.json(
         { error: 'Database not available during build' },
         { status: 503 }

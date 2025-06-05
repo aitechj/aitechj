@@ -6,8 +6,10 @@ import { validatePrerequisites, validateTags } from '../../../../lib/content/val
 
 async function getTopics(request: NextRequest) {
   try {
+    const isLocalDev = process.env.NODE_ENV === 'development';
     const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+    
+    if (!isLocalDev && !databaseUrl) {
       return NextResponse.json(
         { error: 'Database not available during build' },
         { status: 503 }
@@ -47,8 +49,10 @@ async function getTopics(request: NextRequest) {
 
 async function createTopic(request: NextRequest) {
   try {
+    const isLocalDev = process.env.NODE_ENV === 'development';
     const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+    
+    if (!isLocalDev && !databaseUrl) {
       return NextResponse.json(
         { error: 'Database not available during build' },
         { status: 503 }

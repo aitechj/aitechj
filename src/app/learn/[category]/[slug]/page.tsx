@@ -12,8 +12,10 @@ interface TopicPageProps {
 }
 
 async function getTopicData(slug: string) {
+  const isLocalDev = process.env.NODE_ENV === 'development';
   const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+  
+  if (!isLocalDev && !databaseUrl) {
     return null;
   }
 
@@ -163,7 +165,7 @@ export default async function TopicPage({ params }: TopicPageProps) {
               
               {sections.length > 0 ? (
                 <div className="space-y-4">
-                  {sections.map((section, index) => (
+                  {sections.map((section: any, index: number) => (
                     <div
                       key={section.id}
                       className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
