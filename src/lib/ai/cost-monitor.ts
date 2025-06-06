@@ -41,6 +41,29 @@ export async function checkMonthlyCost(): Promise<{
   }
 }
 
+export async function trackTokenUsage(tokens: number, model: string): Promise<void> {
+  console.log(`Token usage tracked: ${tokens} tokens for model ${model}`);
+}
+
+export async function getCostStatus(): Promise<{
+  monthToDateCost: number;
+  tokensUsed: number;
+  warningThreshold: number;
+  shutdownThreshold: number;
+  shutdownFlag: boolean;
+  warningActive: boolean;
+}> {
+  const costCheck = await checkMonthlyCost();
+  return {
+    monthToDateCost: costCheck.totalCost,
+    tokensUsed: costCheck.totalTokens,
+    warningThreshold: WARNING_THRESHOLD,
+    shutdownThreshold: EMERGENCY_SHUTDOWN_THRESHOLD,
+    shutdownFlag: costCheck.shouldShutdown,
+    warningActive: costCheck.shouldWarn
+  };
+}
+
 export async function isAIServiceEnabled(): Promise<boolean> {
   const costCheck = await checkMonthlyCost();
   return !costCheck.shouldShutdown;

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     if (email === 'admin@aitechj.com' && password === 'admin123') {
       const jwtPayload: CustomJWTPayload = {
-        userId: 'demo-admin-id',
+        userId: '550e8400-e29b-41d4-a716-446655440000',
         email: 'admin@aitechj.com',
         role: 'admin',
         subscriptionTier: 'premium',
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         {
           message: 'Login successful',
           user: {
-            id: 'demo-admin-id',
+            id: '550e8400-e29b-41d4-a716-446655440000',
             email: 'admin@aitechj.com',
             role: 'admin',
             subscriptionTier: 'premium',

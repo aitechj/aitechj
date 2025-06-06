@@ -2,7 +2,7 @@ import { db, aiConversations } from '../db';
 import { eq, and, gte, count } from 'drizzle-orm';
 
 export const QUOTA_LIMITS = {
-  guest: 2,
+  guest: 3,
   basic: 50,
   premium: 200,
   admin: 999999,

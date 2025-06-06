@@ -1,5 +1,6 @@
-import { kv } from '@vercel/kv';
 import crypto from 'crypto';
+
+const cache = new Map<string, { data: any; expires: number }>();
 
 export function generateCacheKey(messages: any[], contextContent?: string): string {
   const content = JSON.stringify(messages) + (contextContent || '');
@@ -8,7 +9,15 @@ export function generateCacheKey(messages: any[], contextContent?: string): stri
 
 export async function getCachedResponse(cacheKey: string) {
   try {
-    return await kv.get(cacheKey);
+    const entry = cache.get(cacheKey);
+    if (!entry) return null;
+    
+    if (Date.now() > entry.expires) {
+      cache.delete(cacheKey);
+      return null;
+    }
+    
+    return entry.data;
   } catch (error) {
     console.error('Cache get error:', error);
     return null;
@@ -17,7 +26,8 @@ export async function getCachedResponse(cacheKey: string) {
 
 export async function setCachedResponse(cacheKey: string, response: any) {
   try {
-    await kv.set(cacheKey, response, { ex: 86400 });
+    const expires = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+    cache.set(cacheKey, { data: response, expires });
   } catch (error) {
     console.error('Cache set error:', error);
   }
