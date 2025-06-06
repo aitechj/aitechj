@@ -4,6 +4,8 @@ import { db, aiConversations } from '../../../../lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { getOrCreateGuestUser, setGuestCookie } from '../../../../lib/auth/guest';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     let user = await getCurrentUser();

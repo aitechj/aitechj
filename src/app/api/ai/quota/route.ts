@@ -9,6 +9,8 @@ function firstOfNextMonth(): Date {
   return new Date(now.getFullYear(), now.getMonth() + 1, 1);
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     let user;

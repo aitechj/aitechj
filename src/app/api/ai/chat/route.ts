@@ -25,6 +25,8 @@ const ChatInputSchema = z.object({
   contextContent: z.string().max(5000).optional(),
 });
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     let user;

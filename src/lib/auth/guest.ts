@@ -91,7 +91,7 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
       subscriptionTier: 'guest',
       emailVerified: false,
       isActive: true,
-    }).onConflictDoNothing().returning({ id: users.id });
+    }).returning({ id: users.id });
     
     if (result.length === 0) {
       console.log('⚠️ Guest user already exists, checking database...');

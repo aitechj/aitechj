@@ -3,6 +3,8 @@ import { getCurrentUser } from '../../../../lib/auth/jwt';
 import { checkMonthlyCost } from '../../../../lib/ai/cost-monitor';
 import { getOrCreateGuestUser, setGuestCookie } from '../../../../lib/auth/guest';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     let user = await getCurrentUser();
