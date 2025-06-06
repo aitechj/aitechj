@@ -7,18 +7,40 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    let user = await getCurrentUser();
-    let guestToken = null;
-    let isNewGuest = false;
+    let user;
     
-    if (!user) {
-      const guestResult = await getOrCreateGuestUser(request);
-      user = guestResult.user;
-      guestToken = guestResult.token;
-      isNewGuest = guestResult.isNewGuest;
+    try {
+      user = await getCurrentUser();
+      console.log('✅ Authenticated user found for cost:', user?.userId);
+    } catch (err: any) {
+      if (err.name === "UnauthorizedError") {
+        console.log('🔍 No authenticated user, checking for guest token...');
+        const existingGuestToken = request.cookies.get("guest_token")?.value;
+        
+        if (existingGuestToken) {
+          const { validateGuestToken } = await import('@/lib/auth/guest');
+          user = await validateGuestToken(existingGuestToken);
+          
+          if (!user) {
+            console.log('❌ Invalid guest token, creating new guest user');
+            const guestResult = await getOrCreateGuestUser(request);
+            user = guestResult.user;
+          } else {
+            console.log('✅ Valid guest token found for cost:', user.userId);
+          }
+        } else {
+          console.log('🆕 No guest token found, creating new guest user');
+          const guestResult = await getOrCreateGuestUser(request);
+          user = guestResult.user;
+        }
+      } else {
+        console.error('❌ Authentication error in cost:', err);
+        throw err;
+      }
     }
 
     if (!user) {
+      console.log('❌ No user found after all attempts in cost');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -34,23 +56,20 @@ export async function GET(request: NextRequest) {
 
     const costData = await checkMonthlyCost();
     
-    const response = NextResponse.json({
+    return NextResponse.json({
       ...costData,
       costPerToken: 0.00005,
       emergencyThreshold: 1000,
       warningThreshold: 500,
     });
 
-    if (guestToken && isNewGuest) {
-      setGuestCookie(response, guestToken);
-    }
-
-    return response;
-
   } catch (error) {
-    console.error('Cost monitoring error:', error);
+    console.error('❌ Cost monitoring error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('❌ Error stack:', errorStack);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: errorMessage },
       { status: 500 }
     );
   }

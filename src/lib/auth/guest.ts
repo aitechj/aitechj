@@ -86,31 +86,37 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
     
     const result = await db.insert(users).values({
       id: guestId,
-      email: `${guestId}@guest.local`,
+      email: `guest_${guestId}@aitechj.local`,
       passwordHash: 'guest_user_no_password',
       subscriptionTier: 'guest',
       emailVerified: false,
       isActive: true,
+      createdAt: new Date(),
     }).returning({ id: users.id });
     
+    console.log('✅ Guest user insert result:', result);
+    
     if (result.length === 0) {
-      console.log('⚠️ Guest user already exists, checking database...');
+      console.log('⚠️ No result from insert, checking if user exists...');
       const { eq } = await import('drizzle-orm');
       const existingUser = await db.select().from(users).where(eq(users.id, guestId)).limit(1);
       if (existingUser.length === 0) {
-        throw new Error('Failed to create or find guest user');
+        throw new Error('Failed to create or find guest user in database');
       }
+      console.log('✅ Found existing guest user after failed insert');
+    } else {
+      console.log('✅ Guest user created successfully in database:', guestId);
     }
-    
-    console.log('✅ Guest user created successfully in database:', guestId);
   } catch (error) {
-    console.error('❌ [Guest Creation Error]', error);
-    throw new Error('Failed to create guest session');
+    console.error('❌ [Production Guest Creation Error]', error);
+    console.error('❌ Error details:', JSON.stringify(error, null, 2));
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to create guest session: ${errorMessage}`);
   }
   
   const user: GuestUser = {
     userId: guestId,
-    email: `${guestId}@guest.local`,
+    email: `guest_${guestId}@aitechj.local`,
     role: 'guest',
     subscriptionTier: 'guest',
     isGuest: true,

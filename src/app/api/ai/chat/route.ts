@@ -30,39 +30,44 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     let user;
-    let guestToken = null;
-    let isNewGuest = false;
+    let response;
     
     try {
       user = await getCurrentUser();
+      console.log('✅ Authenticated user found for chat:', user?.userId);
     } catch (err: any) {
       if (err.name === "UnauthorizedError") {
+        console.log('🔍 No authenticated user, checking for guest token...');
         const existingGuestToken = request.cookies.get("guest_token")?.value;
+        
         if (existingGuestToken) {
           const { validateGuestToken } = await import('@/lib/auth/guest');
           user = await validateGuestToken(existingGuestToken);
+          
           if (!user) {
+            console.log('❌ Invalid guest token, creating new guest user');
             const guestResult = await getOrCreateGuestUser(request);
             user = guestResult.user;
-            guestToken = guestResult.token;
-            isNewGuest = guestResult.isNewGuest;
+          } else {
+            console.log('✅ Valid guest token found for chat:', user.userId);
           }
         } else {
+          console.log('🆕 No guest token found, creating new guest user');
           const guestResult = await getOrCreateGuestUser(request);
           user = guestResult.user;
-          guestToken = guestResult.token;
-          isNewGuest = guestResult.isNewGuest;
         }
       } else {
+        console.error('❌ Authentication error in chat:', err);
         throw err;
       }
     }
 
     if (!user) {
-      const guestResult = await getOrCreateGuestUser(request);
-      user = guestResult.user;
-      guestToken = guestResult.token;
-      isNewGuest = guestResult.isNewGuest;
+      console.log('❌ No user found after all attempts in chat');
+      return NextResponse.json(
+        { error: 'Failed to authenticate or create guest user' },
+        { status: 401 }
+      );
     }
 
     const serviceEnabled = await isAIServiceEnabled();
@@ -93,16 +98,10 @@ export async function POST(request: NextRequest) {
     
     if (usageCount >= limit) {
       console.log('❌ Quota exceeded, blocking request');
-      const response = NextResponse.json(
+      return NextResponse.json(
         { error: 'Monthly quota exceeded. Please upgrade your plan for more questions.' },
         { status: 429 }
       );
-
-      if (guestToken && isNewGuest) {
-        setGuestCookie(response, guestToken);
-      }
-
-      return response;
     }
 
     const cacheKey = generateCacheKey(sanitizedMessages, sanitizedContext);
@@ -110,42 +109,38 @@ export async function POST(request: NextRequest) {
     if (cachedResponse) {
       try {
         const cachedConversationResult = await db.insert(aiConversations).values({
-          userId: user!.userId,
-          conversationId: `conv_cached_${Date.now()}_${user!.userId}`,
+          userId: user.userId,
+          conversationId: `conv_cached_${Date.now()}_${user.userId}`,
           messages: [...sanitizedMessages, { role: 'assistant', content: cachedResponse.content }],
           tokensUsed: cachedResponse.tokensUsed || 0,
+          createdAt: new Date(),
         }).returning({ id: aiConversations.id });
         
-        console.log('✅ Cached conversation logged for user:', user!.userId, 'conversation ID:', cachedConversationResult[0]?.id);
+        console.log('✅ Cached conversation logged for user:', user.userId, 'conversation ID:', cachedConversationResult[0]?.id);
       } catch (dbError) {
         console.error('❌ Failed to insert cached conversation:', dbError);
         console.error('❌ Cached database error details:', JSON.stringify(dbError, null, 2));
       }
 
-      const response = NextResponse.json({ 
+      return NextResponse.json({ 
         ...cachedResponse, 
         cached: true,
         quota: usageCount + 1
       });
-
-      if (guestToken && isNewGuest) {
-        setGuestCookie(response, guestToken);
-      }
-
-      return response;
     }
 
-    const aiResponse = await generateAIResponse(sanitizedMessages, user!.subscriptionTier, sanitizedContext);
+    const aiResponse = await generateAIResponse(sanitizedMessages, user.subscriptionTier, sanitizedContext);
 
     try {
       const conversationResult = await db.insert(aiConversations).values({
-        userId: user!.userId,
-        conversationId: `conv_${Date.now()}_${user!.userId}`,
+        userId: user.userId,
+        conversationId: `conv_${Date.now()}_${user.userId}`,
         messages: [...sanitizedMessages, { role: 'assistant', content: aiResponse.content }],
         tokensUsed: aiResponse.tokensUsed,
+        createdAt: new Date(),
       }).returning({ id: aiConversations.id });
       
-      console.log('✅ Conversation logged for user:', user!.userId, 'conversation ID:', conversationResult[0]?.id);
+      console.log('✅ Conversation logged for user:', user.userId, 'conversation ID:', conversationResult[0]?.id);
     } catch (dbError) {
       console.error('❌ Failed to insert conversation:', dbError);
       console.error('❌ Database error details:', JSON.stringify(dbError, null, 2));
@@ -153,22 +148,18 @@ export async function POST(request: NextRequest) {
 
     await setCachedResponse(cacheKey, aiResponse);
 
-    const updatedQuota = await checkQuota(user!.userId, user!.subscriptionTier);
+    const updatedQuota = await checkQuota(user.userId, user.subscriptionTier);
     
-    const response = NextResponse.json({ 
+    return NextResponse.json({ 
       ...aiResponse, 
       cached: false,
       quota: updatedQuota
     });
 
-    if (guestToken && isNewGuest) {
-      setGuestCookie(response, guestToken);
-    }
-
-    return response;
-
   } catch (error) {
-    console.error('AI chat error:', error);
+    console.error('❌ AI chat error:', error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('❌ Error stack:', errorStack);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -177,8 +168,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: errorMessage },
       { status: 500 }
     );
   }

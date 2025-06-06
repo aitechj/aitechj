@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { getMonthlyUsage } from '@/lib/ai/quota';
-import { getOrCreateGuestUser, setGuestCookie, validateGuestToken } from '@/lib/auth/guest';
+import { getOrCreateGuestUser, validateGuestToken } from '@/lib/auth/guest';
 import { eq } from 'drizzle-orm';
 
 function firstOfNextMonth(): Date {
@@ -14,54 +14,88 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     let user;
-    let guestToken = null;
-    let isNewGuest = false;
+    let response;
     
     try {
       user = await getCurrentUser();
+      console.log('✅ Authenticated user found:', user?.userId);
     } catch (err: any) {
       if (err.name === "UnauthorizedError") {
+        console.log('🔍 No authenticated user, checking for guest token...');
         const existingGuestToken = request.cookies.get("guest_token")?.value;
+        
         if (existingGuestToken) {
+          console.log('🍪 Found existing guest token, validating...');
           user = await validateGuestToken(existingGuestToken);
+          
           if (!user) {
             console.log('❌ Invalid guest token, creating new guest user');
             const guestResult = await getOrCreateGuestUser(request);
             user = guestResult.user;
-            guestToken = guestResult.token;
-            isNewGuest = guestResult.isNewGuest;
+            
+            response = NextResponse.json({
+              used: 0,
+              quota: 3,
+              resetDate: firstOfNextMonth().toISOString()
+            }, {
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
+            });
+            
+            response.cookies.set('guest_token', guestResult.token, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              maxAge: 30 * 24 * 60 * 60,
+              path: '/',
+            });
+            
+            return response;
           } else {
             console.log('✅ Valid guest token found for user:', user.userId);
-            
-            const { db, users } = await import('@/lib/db');
-            const existingUser = await db.select().from(users).where(eq(users.id, user.userId)).limit(1);
-            
-            if (existingUser.length === 0) {
-              console.log('❌ Guest user not found in database, creating new one');
-              const guestResult = await getOrCreateGuestUser(request);
-              user = guestResult.user;
-              guestToken = guestResult.token;
-              isNewGuest = guestResult.isNewGuest;
-            }
           }
         } else {
           console.log('🆕 No guest token found, creating new guest user');
           const guestResult = await getOrCreateGuestUser(request);
           user = guestResult.user;
-          guestToken = guestResult.token;
-          isNewGuest = guestResult.isNewGuest;
+          
+          response = NextResponse.json({
+            used: 0,
+            quota: 3,
+            resetDate: firstOfNextMonth().toISOString()
+          }, {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          });
+          
+          response.cookies.set('guest_token', guestResult.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60,
+            path: '/',
+          });
+          
+          return response;
         }
       } else {
+        console.error('❌ Authentication error:', err);
         throw err;
       }
     }
 
     if (!user) {
-      console.log('🆕 No user found, creating guest user');
-      const guestResult = await getOrCreateGuestUser(request);
-      user = guestResult.user;
-      guestToken = guestResult.token;
-      isNewGuest = guestResult.isNewGuest;
+      console.log('❌ No user found after all attempts');
+      return NextResponse.json(
+        { error: 'Failed to authenticate or create guest user' },
+        { status: 401 }
+      );
     }
 
     const usageCount = await getMonthlyUsage(user.userId);
@@ -72,7 +106,7 @@ export async function GET(request: NextRequest) {
     
     console.log('📊 Quota check result:', { userId: user.userId, used: usageCount, limit });
     
-    const response = NextResponse.json({
+    return NextResponse.json({
       used: usageCount,
       quota: limit,
       resetDate: firstOfNextMonth().toISOString()
@@ -84,16 +118,13 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    if (guestToken && isNewGuest) {
-      setGuestCookie(response, guestToken);
-    }
-
-    return response;
-
   } catch (error) {
-    console.error('Quota check error:', error);
+    console.error('❌ Quota check error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('❌ Error stack:', errorStack);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: errorMessage },
       { status: 500 }
     );
   }
