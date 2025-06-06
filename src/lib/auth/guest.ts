@@ -84,17 +84,19 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
     console.log('💾 Inserting guest user into database...');
     const { db, users } = await import('../db');
     
+    console.log('Creating guest user in database:', guestId);
+    
     const result = await db.insert(users).values({
       id: guestId,
-      email: `guest_${guestId}@aitechj.local`,
+      email: `${guestId}@guest.local`,
       passwordHash: 'guest_user_no_password',
       subscriptionTier: 'guest',
       emailVerified: false,
       isActive: true,
       createdAt: new Date(),
-    }).returning({ id: users.id });
+    }).onConflictDoNothing().returning({ id: users.id });
     
-    console.log('✅ Guest user insert result:', result);
+    console.log('✅ Guest user created successfully:', guestId, 'result:', result);
     
     if (result.length === 0) {
       console.log('⚠️ No result from insert, checking if user exists...');
