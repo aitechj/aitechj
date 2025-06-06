@@ -28,6 +28,12 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.json({
       ...quotaStatus,
       resetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString(),
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
     if (guestToken && isNewGuest) {

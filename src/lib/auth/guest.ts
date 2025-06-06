@@ -64,6 +64,7 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
   const token = createGuestJWT(guestId);
   
   try {
+    console.log('Creating guest user in database:', guestId);
     await db.insert(users).values({
       id: guestId,
       email: `guest_${guestId}@aitechj.local`,
@@ -73,9 +74,9 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
       isActive: true,
     });
     
-    console.log(`✅ Guest user created: ${guestId}`);
+    console.log('✅ Guest user created successfully:', guestId);
   } catch (error) {
-    console.error('Failed to create guest user in database:', error);
+    console.error('❌ Failed to create guest user in database:', error);
     if (error instanceof Error && (error.message.includes('duplicate key') || error.message.includes('unique constraint'))) {
       console.log('Guest user already exists, continuing...');
     } else {

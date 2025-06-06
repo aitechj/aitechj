@@ -20,6 +20,7 @@ export async function checkQuota(userId: string, subscriptionTier: string): Prom
   startOfMonth.setHours(0, 0, 0, 0);
 
   try {
+    console.log('Checking quota for user:', userId, 'since:', startOfMonth);
     const used = await db
       .select({ count: count() })
       .from(aiConversations)
@@ -31,6 +32,7 @@ export async function checkQuota(userId: string, subscriptionTier: string): Prom
       );
 
     const usedCount = Number(used[0]?.count) || 0;
+    console.log('Found conversations:', usedCount);
     
     return {
       allowed: usedCount < limit,
