@@ -102,15 +102,22 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
   try {
     const { cookies } = await import('next/headers');
     const cookieStore = cookies();
-    const token = cookieStore.get('access_token')?.value;
+    const token = cookieStore.get('access_token')?.value || cookieStore.get('guest_token')?.value;
     
     if (!token) {
-      return null;
+      const error = new Error('No authentication token found');
+      error.name = 'UnauthorizedError';
+      throw error;
     }
     
     return await verifyJWT(token);
   } catch (error) {
+    if (error.name === 'UnauthorizedError') {
+      throw error;
+    }
     console.error('Get current user failed:', error);
-    return null;
+    const authError = new Error('Authentication failed');
+    authError.name = 'UnauthorizedError';
+    throw authError;
   }
 }
