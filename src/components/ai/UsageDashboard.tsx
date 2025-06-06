@@ -1,28 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useQuota } from '../../app/ai-chat/page';
 
 export function UsageDashboard() {
-  const [quota, setQuota] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { quota } = useQuota();
 
-  useEffect(() => {
-    fetchQuota();
-  }, []);
-
-  const fetchQuota = async () => {
-    try {
-      const response = await fetch('/api/ai/quota');
-      const data = await response.json();
-      setQuota(data);
-    } catch (error) {
-      console.error('Failed to fetch quota:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) return <div>Loading...</div>;
-  if (!quota) return <div>Unable to load usage data</div>;
+  if (!quota) return <div>Loading...</div>;
 
   const percentage = (quota.used / quota.limit) * 100;
 

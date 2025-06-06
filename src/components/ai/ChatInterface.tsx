@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
+import { useQuota } from '../../app/ai-chat/page';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,7 +13,7 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [quota, setQuota] = useState<any>(null);
+  const { quota, refreshQuota } = useQuota();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -22,6 +23,8 @@ export function ChatInterface() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -35,6 +38,7 @@ export function ChatInterface() {
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
@@ -42,13 +46,13 @@ export function ChatInterface() {
       
       if (response.ok) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
-        setQuota(data.quota);
+        await refreshQuota();
       } else {
         const errorMessage = response.status === 429 
-          ? data.error 
+          ? data.error || 'Monthly quota exceeded. Please upgrade your plan for more questions.'
           : `Error: ${data.error || 'Something went wrong'}`;
         setMessages(prev => [...prev, { role: 'assistant', content: errorMessage }]);
-        if (data.quota) setQuota(data.quota);
+        await refreshQuota();
       }
     } catch (error) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong.' }]);
@@ -84,7 +88,7 @@ export function ChatInterface() {
       <div className="border-t p-4">
         {quota && (
           <div className="text-sm text-gray-600 mb-2">
-            {quota.used}/{quota.limit} questions used this month
+            Questions used: {quota.used}/{quota.limit} this month
             {quota.used >= quota.limit && (
               <span className="text-red-600 ml-2">Quota exceeded</span>
             )}
