@@ -16,8 +16,18 @@ export async function GET(request: NextRequest) {
       isNewGuest = guestResult.isNewGuest;
     }
 
-    if (!user || user.role !== 'admin') {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (user.role !== 'admin') {
+      return NextResponse.json({ 
+        totalCost: 0,
+        tokensUsed: 0,
+        costPerToken: 0.00005,
+        emergencyThreshold: 1000,
+        warningThreshold: 500,
+      });
     }
 
     const costData = await checkMonthlyCost();

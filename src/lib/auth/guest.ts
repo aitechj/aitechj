@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signJWT, verifyJWT, JWTPayload } from './jwt';
+import { db, users } from '../db';
 import crypto from 'crypto';
 
 export interface GuestUser extends JWTPayload {
@@ -7,13 +8,13 @@ export interface GuestUser extends JWTPayload {
 }
 
 export function generateGuestId(): string {
-  return `guest_${crypto.randomUUID()}`;
+  return crypto.randomUUID();
 }
 
 export function createGuestJWT(guestId: string): string {
   const guestPayload = {
     userId: guestId,
-    email: `${guestId}@guest.local`,
+    email: `guest_${guestId}@aitechj.local`,
     role: 'guest',
     subscriptionTier: 'guest',
   };
@@ -63,22 +64,28 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
   const token = createGuestJWT(guestId);
   
   try {
-    const { db, users } = await import('../db');
     await db.insert(users).values({
       id: guestId,
-      email: `${guestId}@guest.local`,
-      passwordHash: 'guest_user_no_password',
+      email: `guest_${guestId}@aitechj.local`,
+      passwordHash: null,
       subscriptionTier: 'guest',
       emailVerified: false,
       isActive: true,
-    }).onConflictDoNothing();
+    });
+    
+    console.log(`✅ Guest user created: ${guestId}`);
   } catch (error) {
     console.error('Failed to create guest user in database:', error);
+    if (error instanceof Error && (error.message.includes('duplicate key') || error.message.includes('unique constraint'))) {
+      console.log('Guest user already exists, continuing...');
+    } else {
+      throw new Error('Failed to create guest session');
+    }
   }
   
   const user: GuestUser = {
     userId: guestId,
-    email: `${guestId}@guest.local`,
+    email: `guest_${guestId}@aitechj.local`,
     role: 'guest',
     subscriptionTier: 'guest',
     isGuest: true,

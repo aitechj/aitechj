@@ -55,7 +55,7 @@ export function CostMonitor() {
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-gray-600">Tokens Used:</span>
-            <div className="font-semibold">{costData.totalTokens.toLocaleString()}</div>
+            <div className="font-semibold">{costData.tokensUsed?.toLocaleString() || '0'}</div>
           </div>
           <div>
             <span className="text-gray-600">Warning Threshold:</span>

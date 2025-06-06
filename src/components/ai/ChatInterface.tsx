@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
-import { useQuota } from '../../app/ai-chat/page';
+import { useQuota } from '@/contexts/QuotaContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -111,7 +111,7 @@ export function ChatInterface() {
           />
           <Button 
             onClick={sendMessage} 
-            disabled={loading || !input.trim() || (quota && quota.used >= quota.limit)}
+            disabled={loading || !input.trim() || (quota ? quota.used >= quota.limit : false)}
           >
             {loading ? 'Sending...' : 'Send'}
           </Button>

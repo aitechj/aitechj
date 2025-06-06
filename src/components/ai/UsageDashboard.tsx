@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useQuota } from '../../app/ai-chat/page';
+import { useQuota } from '@/contexts/QuotaContext';
 
 export function UsageDashboard() {
   const { quota } = useQuota();
