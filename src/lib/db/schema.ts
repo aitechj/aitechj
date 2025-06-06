@@ -166,6 +166,7 @@ export const aiConversations = pgTable('ai_conversations', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   conversationId: varchar('conversation_id', { length: 255 }).notNull(),
+  threadId: uuid('thread_id').defaultRandom().notNull(),
   messages: jsonb('messages'),
   tokensUsed: integer('tokens_used'),
   createdAt: timestamp('created_at').defaultNow(),
