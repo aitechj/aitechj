@@ -3,7 +3,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
 
 export interface JWTPayload {
   userId: string;
-  email: string;
+  email: string | null;
   role: string;
   subscriptionTier: string;
   iat?: number;

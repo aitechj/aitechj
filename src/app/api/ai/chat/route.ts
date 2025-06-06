@@ -2,12 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUser } from '../../../../lib/auth/jwt';
 import { generateAIResponse } from '../../../../lib/ai/openai';
-import { sanitizeInput, ChatInputSchema } from '../../../../lib/ai/validation';
 import { checkQuota } from '../../../../lib/ai/quota';
 import { getCachedResponse, setCachedResponse, generateCacheKey } from '../../../../lib/ai/cache';
 import { isAIServiceEnabled } from '../../../../lib/ai/cost-monitor';
 import { db, aiConversations } from '../../../../lib/db';
 import { getOrCreateGuestUser, setGuestCookie } from '../../../../lib/auth/guest';
+
+
+const sanitizeInput = (input: string): string => {
+  return input
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .trim()
+    .slice(0, 2048);
+};
+
+const ChatInputSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant', 'system']),
+    content: z.string().min(1).max(2048),
+  })).min(1).max(50),
+  contextContent: z.string().max(5000).optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,13 +57,19 @@ export async function POST(request: NextRequest) {
 
     const quotaCheck = await checkQuota(user!.userId, user!.subscriptionTier);
     if (!quotaCheck.allowed) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           error: 'Monthly quota exceeded. Please upgrade your plan for more questions.', 
           quota: quotaCheck 
         },
         { status: 429 }
       );
+
+      if (guestToken && isNewGuest) {
+        setGuestCookie(response, guestToken);
+      }
+
+      return response;
     }
 
     const cacheKey = generateCacheKey(sanitizedMessages, sanitizedContext);
@@ -68,12 +90,16 @@ export async function POST(request: NextRequest) {
 
     const aiResponse = await generateAIResponse(sanitizedMessages, user!.subscriptionTier, sanitizedContext);
 
-    await db.insert(aiConversations).values({
-      userId: user!.userId,
-      conversationId: `conv_${Date.now()}`,
-      messages: [...sanitizedMessages, { role: 'assistant', content: aiResponse.content }],
-      tokensUsed: aiResponse.tokensUsed,
-    });
+    try {
+      await db.insert(aiConversations).values({
+        userId: user!.userId,
+        conversationId: `conv_${Date.now()}`,
+        messages: [...sanitizedMessages, { role: 'assistant', content: aiResponse.content }],
+        tokensUsed: aiResponse.tokensUsed,
+      });
+    } catch (dbError) {
+      console.error('Failed to insert conversation:', dbError);
+    }
 
     await setCachedResponse(cacheKey, aiResponse);
 

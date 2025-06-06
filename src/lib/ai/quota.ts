@@ -19,21 +19,30 @@ export async function checkQuota(userId: string, subscriptionTier: string): Prom
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const used = await db
-    .select({ count: count() })
-    .from(aiConversations)
-    .where(
-      and(
-        eq(aiConversations.userId, userId),
-        gte(aiConversations.createdAt, startOfMonth)
-      )
-    );
+  try {
+    const used = await db
+      .select({ count: count() })
+      .from(aiConversations)
+      .where(
+        and(
+          eq(aiConversations.userId, userId),
+          gte(aiConversations.createdAt, startOfMonth)
+        )
+      );
 
-  const usedCount = used[0]?.count || 0;
-  
-  return {
-    allowed: usedCount < limit,
-    used: usedCount,
-    limit,
-  };
+    const usedCount = Number(used[0]?.count) || 0;
+    
+    return {
+      allowed: usedCount < limit,
+      used: usedCount,
+      limit,
+    };
+  } catch (error) {
+    console.error('Error checking quota:', error);
+    return {
+      allowed: true,
+      used: 0,
+      limit,
+    };
+  }
 }
