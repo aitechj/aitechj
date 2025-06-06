@@ -10,8 +10,8 @@ export const userRoles = pgTable('user_roles', {
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  email: varchar('email', { length: 255 }).unique(),
-  passwordHash: varchar('password_hash', { length: 255 }),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   roleId: integer('role_id').references(() => userRoles.id),
   subscriptionTier: varchar('subscription_tier', { length: 50 }).default('guest'),
   emailVerified: boolean('email_verified').default(false),
