@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getCurrentUser } from '../../../../lib/auth/jwt';
-import { generateAIResponse, ChatMessageSchema } from '../../../../lib/ai/openai';
+import { generateAIResponse } from '../../../../lib/ai/openai';
 import { sanitizeInput, ChatInputSchema } from '../../../../lib/ai/validation';
 import { checkQuota } from '../../../../lib/ai/quota';
 import { getCachedResponse, setCachedResponse, generateCacheKey } from '../../../../lib/ai/cache';
-import { checkRateLimit } from '../../../../lib/ai/rate-limit';
 import { isAIServiceEnabled } from '../../../../lib/ai/cost-monitor';
 import { db, aiConversations } from '../../../../lib/db';
-
-
+import { getOrCreateGuestUser, setGuestCookie } from '../../../../lib/auth/guest';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    let user = await getCurrentUser();
+    let guestToken = null;
+    let isNewGuest = false;
+    
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const guestResult = await getOrCreateGuestUser(request);
+      user = guestResult.user;
+      guestToken = guestResult.token;
+      isNewGuest = guestResult.isNewGuest;
     }
 
     const serviceEnabled = await isAIServiceEnabled();
@@ -35,25 +39,7 @@ export async function POST(request: NextRequest) {
     }));
     const sanitizedContext = contextContent ? sanitizeInput(contextContent) : undefined;
 
-    const rateLimit = await checkRateLimit(user.userId);
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { 
-          error: 'Rate limit exceeded. Please wait before sending another message.',
-          rateLimit 
-        },
-        { 
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': '10',
-            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-            'X-RateLimit-Reset': rateLimit.resetTime.toString(),
-          }
-        }
-      );
-    }
-
-    const quotaCheck = await checkQuota(user.userId, user.subscriptionTier);
+    const quotaCheck = await checkQuota(user!.userId, user!.subscriptionTier);
     if (!quotaCheck.allowed) {
       return NextResponse.json(
         { 
@@ -67,18 +53,23 @@ export async function POST(request: NextRequest) {
     const cacheKey = generateCacheKey(sanitizedMessages, sanitizedContext);
     const cachedResponse = await getCachedResponse(cacheKey);
     if (cachedResponse) {
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         ...cachedResponse, 
         cached: true,
-        quota: quotaCheck,
-        rateLimit 
+        quota: quotaCheck
       });
+
+      if (guestToken && isNewGuest) {
+        setGuestCookie(response, guestToken);
+      }
+
+      return response;
     }
 
-    const aiResponse = await generateAIResponse(sanitizedMessages, user.subscriptionTier, sanitizedContext);
+    const aiResponse = await generateAIResponse(sanitizedMessages, user!.subscriptionTier, sanitizedContext);
 
     await db.insert(aiConversations).values({
-      userId: user.userId,
+      userId: user!.userId,
       conversationId: `conv_${Date.now()}`,
       messages: [...sanitizedMessages, { role: 'assistant', content: aiResponse.content }],
       tokensUsed: aiResponse.tokensUsed,
@@ -86,14 +77,19 @@ export async function POST(request: NextRequest) {
 
     await setCachedResponse(cacheKey, aiResponse);
 
-    const updatedQuota = await checkQuota(user.userId, user.subscriptionTier);
+    const updatedQuota = await checkQuota(user!.userId, user!.subscriptionTier);
     
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       ...aiResponse, 
       cached: false,
-      quota: updatedQuota,
-      rateLimit 
+      quota: updatedQuota
     });
+
+    if (guestToken && isNewGuest) {
+      setGuestCookie(response, guestToken);
+    }
+
+    return response;
 
   } catch (error) {
     console.error('AI chat error:', error);
