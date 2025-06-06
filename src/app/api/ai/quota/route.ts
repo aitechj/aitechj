@@ -10,8 +10,33 @@ export async function GET(request: NextRequest) {
     let guestToken = null;
     let isNewGuest = false;
     
-    user = await getCurrentUser();
-    
+    try {
+      user = await getCurrentUser();
+    } catch (err: any) {
+      if (err.name === "UnauthorizedError") {
+        const existingGuestToken = request.cookies.get("guest_token")?.value;
+        if (existingGuestToken) {
+          const { validateGuestToken } = await import('@/lib/auth/guest');
+          const guestUser = await validateGuestToken(existingGuestToken);
+          if (guestUser) {
+            user = guestUser;
+          } else {
+            const guestResult = await getOrCreateGuestUser(request);
+            user = guestResult.user;
+            guestToken = guestResult.token;
+            isNewGuest = guestResult.isNewGuest;
+          }
+        } else {
+          const guestResult = await getOrCreateGuestUser(request);
+          user = guestResult.user;
+          guestToken = guestResult.token;
+          isNewGuest = guestResult.isNewGuest;
+        }
+      } else {
+        throw err;
+      }
+    }
+
     if (!user) {
       const guestResult = await getOrCreateGuestUser(request);
       user = guestResult.user;
@@ -19,14 +44,16 @@ export async function GET(request: NextRequest) {
       isNewGuest = guestResult.isNewGuest;
     }
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const quotaStatus = await checkQuota(user.userId, user.subscriptionTier);
+    const limit = user.subscriptionTier === "guest" ? 3
+               : user.subscriptionTier === "basic" ? 50
+               : user.subscriptionTier === "premium" ? 200
+               : Infinity; // admin or others
     
     const response = NextResponse.json({
-      ...quotaStatus,
+      used: quotaStatus.used,
+      limit: limit,
+      allowed: quotaStatus.allowed,
       resetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString(),
     }, {
       headers: {

@@ -76,11 +76,11 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
     
     console.log('✅ Guest user created successfully:', guestId);
   } catch (error) {
-    console.error('❌ Failed to create guest user in database:', error);
+    console.error('❌ [Guest Creation Error]', error);
     if (error instanceof Error && (error.message.includes('duplicate key') || error.message.includes('unique constraint'))) {
       console.log('Guest user already exists, continuing...');
     } else {
-      throw new Error('Failed to create guest session');
+      throw error; // so your API returns 500 instead of silently proceeding
     }
   }
   

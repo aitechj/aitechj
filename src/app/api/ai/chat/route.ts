@@ -55,13 +55,15 @@ export async function POST(request: NextRequest) {
     }));
     const sanitizedContext = contextContent ? sanitizeInput(contextContent) : undefined;
 
-    const quotaCheck = await checkQuota(user!.userId, user!.subscriptionTier);
-    if (!quotaCheck.allowed) {
+    const usageCount = await checkQuota(user!.userId, user!.subscriptionTier);
+    const limit = user!.subscriptionTier === "guest" ? 3
+                : user!.subscriptionTier === "basic" ? 50
+                : user!.subscriptionTier === "premium" ? 200
+                : Infinity; // admin
+    
+    if (usageCount.used >= limit) {
       const response = NextResponse.json(
-        { 
-          error: 'Monthly quota exceeded. Please upgrade your plan for more questions.', 
-          quota: quotaCheck 
-        },
+        { error: 'Monthly quota exceeded. Please upgrade your plan for more questions.' },
         { status: 429 }
       );
 
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.json({ 
         ...cachedResponse, 
         cached: true,
-        quota: quotaCheck
+        quota: usageCount
       });
 
       if (guestToken && isNewGuest) {
@@ -97,8 +99,9 @@ export async function POST(request: NextRequest) {
         messages: [...sanitizedMessages, { role: 'assistant', content: aiResponse.content }],
         tokensUsed: aiResponse.tokensUsed,
       });
+      console.log('✅ Conversation logged for user:', user!.userId);
     } catch (dbError) {
-      console.error('Failed to insert conversation:', dbError);
+      console.error('❌ Failed to insert conversation:', dbError);
     }
 
     await setCachedResponse(cacheKey, aiResponse);
