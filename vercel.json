@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "USE_STUB_DB": "true"
+  },
+  "build": {
+    "env": {
+      "USE_STUB_DB": "true"
+    }
+  }
+}

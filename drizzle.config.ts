@@ -5,9 +5,9 @@ export default {
   out: './drizzle',
   driver: 'pg',
   dbCredentials: {
-    connectionString: process.env.DATABASE_URL!,
+    connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/aitechj_dev',
   },
   introspect: {
-    casing: 'snake_case',
+    casing: 'preserve',
   },
 } satisfies Config;

@@ -6,6 +6,16 @@ import { performQualityChecks } from '../../../../lib/content/validation';
 
 async function getSections(request: NextRequest) {
   try {
+    const isLocalDev = process.env.NODE_ENV === 'development';
+    const databaseUrl = process.env.DATABASE_URL;
+    
+    if (!isLocalDev && !databaseUrl) {
+      return NextResponse.json(
+        { error: 'Database not available during build' },
+        { status: 503 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -124,6 +134,16 @@ async function getSections(request: NextRequest) {
 
 async function createSection(request: NextRequest) {
   try {
+    const isLocalDev = process.env.NODE_ENV === 'development';
+    const databaseUrl = process.env.DATABASE_URL;
+    
+    if (!isLocalDev && !databaseUrl) {
+      return NextResponse.json(
+        { error: 'Database not available during build' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const {
       topicId,

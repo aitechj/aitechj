@@ -12,30 +12,42 @@ interface TopicPageProps {
 }
 
 async function getTopicData(slug: string) {
-  const topic = await db.select().from(topics).where(eq(topics.slug, slug)).limit(1);
+  const isLocalDev = process.env.NODE_ENV === 'development';
+  const databaseUrl = process.env.DATABASE_URL;
   
-  if (topic.length === 0) {
+  if (!isLocalDev && !databaseUrl) {
     return null;
   }
 
-  const topicSections = await db.select({
-    id: sections.id,
-    title: sections.title,
-    orderIndex: sections.orderIndex,
-    readingTime: sections.readingTime,
-    summary: sections.summary,
-  })
-  .from(sections)
-  .where(and(
-    eq(sections.topicId, topic[0].id),
-    eq(sections.status, 'published')
-  ))
-  .orderBy(sections.orderIndex);
+  try {
+    const topic = await db.select().from(topics).where(eq(topics.slug, slug)).limit(1);
+    
+    if (topic.length === 0) {
+      return null;
+    }
 
-  return {
-    topic: topic[0],
-    sections: topicSections
-  };
+    const topicSections = await db.select({
+      id: sections.id,
+      title: sections.title,
+      orderIndex: sections.orderIndex,
+      readingTime: sections.readingTime,
+      summary: sections.summary,
+    })
+    .from(sections)
+    .where(and(
+      eq(sections.topicId, topic[0].id),
+      eq(sections.status, 'published')
+    ))
+    .orderBy(sections.orderIndex);
+
+    return {
+      topic: topic[0],
+      sections: topicSections
+    };
+  } catch (error) {
+    console.error('Failed to fetch topic data:', error);
+    return null;
+  }
 }
 
 export async function generateMetadata({ params }: TopicPageProps): Promise<Metadata> {
@@ -55,14 +67,14 @@ export async function generateMetadata({ params }: TopicPageProps): Promise<Meta
     keywords: Array.isArray(topic.tags) ? topic.tags.join(', ') : '',
     openGraph: {
       title: topic.metaTitle || topic.title,
-      description: topic.metaDescription || topic.description,
+      description: topic.metaDescription || topic.description || undefined,
       type: 'article',
       url: `/learn/${params.category}/${params.slug}`,
     },
     twitter: {
       card: 'summary_large_image',
       title: topic.metaTitle || topic.title,
-      description: topic.metaDescription || topic.description,
+      description: topic.metaDescription || topic.description || undefined,
     },
     alternates: {
       canonical: `/learn/${params.category}/${params.slug}`,
@@ -153,7 +165,7 @@ export default async function TopicPage({ params }: TopicPageProps) {
               
               {sections.length > 0 ? (
                 <div className="space-y-4">
-                  {sections.map((section, index) => (
+                  {sections.map((section: any, index: number) => (
                     <div
                       key={section.id}
                       className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"

@@ -4,6 +4,14 @@ import { requireCSRF } from '../../../../lib/security/csrf';
 import { eq, desc } from 'drizzle-orm';
 
 async function getMediaFiles(request: NextRequest) {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+    return NextResponse.json(
+      { error: 'Database not available during build' },
+      { status: 503 }
+    );
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -35,6 +43,14 @@ async function getMediaFiles(request: NextRequest) {
 }
 
 async function uploadMedia(request: NextRequest) {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl || databaseUrl.includes('127.0.0.1') || databaseUrl.includes('localhost')) {
+    return NextResponse.json(
+      { error: 'Database not available during build' },
+      { status: 503 }
+    );
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;

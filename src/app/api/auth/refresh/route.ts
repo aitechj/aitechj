@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     const { user, role } = userWithRole[0];
 
-    await revokeRefreshToken(user.id, refreshToken);
+    await revokeRefreshToken(refreshToken);
 
     const jwtPayload: CustomJWTPayload = {
       userId: user.id,

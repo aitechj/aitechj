@@ -20,21 +20,33 @@ export const metadata: Metadata = {
 };
 
 async function getTopics() {
-  const topicsList = await db.select({
-    id: topics.id,
-    title: topics.title,
-    description: topics.description,
-    difficultyLevel: topics.difficultyLevel,
-    category: topics.category,
-    estimatedTime: topics.estimatedTime,
-    slug: topics.slug,
-    tags: topics.tags,
-  })
-  .from(topics)
-  .orderBy(desc(topics.createdAt))
-  .limit(12);
+  const isLocalDev = process.env.NODE_ENV === 'development';
+  const databaseUrl = process.env.DATABASE_URL;
+  
+  if (!isLocalDev && !databaseUrl) {
+    return [];
+  }
 
-  return topicsList;
+  try {
+    const topicsList = await db.select({
+      id: topics.id,
+      title: topics.title,
+      description: topics.description,
+      difficultyLevel: topics.difficultyLevel,
+      category: topics.category,
+      estimatedTime: topics.estimatedTime,
+      slug: topics.slug,
+      tags: topics.tags,
+    })
+    .from(topics)
+    .orderBy(desc(topics.createdAt))
+    .limit(12);
+
+    return topicsList;
+  } catch (error) {
+    console.error('Failed to fetch topics:', error);
+    return [];
+  }
 }
 
 export default async function LearnPage() {
@@ -47,7 +59,7 @@ export default async function LearnPage() {
     4: 'Pro'
   };
 
-  const categories = Array.from(new Set(topicsList.map(topic => topic.category))).filter(Boolean);
+  const categories = Array.from(new Set(topicsList.map((topic: any) => topic.category))).filter(Boolean) as string[];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -66,13 +78,13 @@ export default async function LearnPage() {
           <div className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Categories</h2>
             <div className="flex flex-wrap gap-3">
-              {categories.map((category) => (
+              {categories.map((category: string) => (
                 <Link
                   key={category}
                   href={`/learn?category=${encodeURIComponent(category || '')}`}
                   className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  {category?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  {category?.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                 </Link>
               ))}
             </div>
@@ -80,7 +92,7 @@ export default async function LearnPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {topicsList.map((topic) => (
+          {topicsList.map((topic: any) => (
             <Link
               key={topic.id}
               href={`/learn/${topic.category}/${topic.slug}`}
