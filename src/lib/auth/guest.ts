@@ -68,7 +68,7 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
     await db.insert(users).values({
       id: guestId,
       email: `guest_${guestId}@aitechj.local`,
-      passwordHash: null,
+      passwordHash: 'guest_user_no_password', // Required field, can't be null
       subscriptionTier: 'guest',
       emailVerified: false,
       isActive: true,
