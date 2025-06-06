@@ -43,55 +43,80 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
   token: string;
   isNewGuest: boolean;
 }> {
+  console.log('🔍 getOrCreateGuestUser called');
   const existingGuestToken = request.cookies.get('guest_token')?.value;
+  console.log('🍪 Existing guest token:', existingGuestToken ? 'found' : 'not found');
   
   if (existingGuestToken) {
     try {
+      console.log('🔐 Validating existing guest token...');
       const decoded = await validateGuestToken(existingGuestToken);
       
       if (decoded) {
-        return {
-          user: decoded,
-          token: existingGuestToken,
-          isNewGuest: false,
-        };
+        console.log('✅ Existing guest token valid, checking database for user:', decoded.userId);
+        
+        const { db, users } = await import('../db');
+        const { eq } = await import('drizzle-orm');
+        const existingUser = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
+        
+        if (existingUser.length > 0) {
+          console.log('✅ Guest user found in database, returning existing user:', decoded.userId);
+          return {
+            user: decoded,
+            token: existingGuestToken,
+            isNewGuest: false,
+          };
+        } else {
+          console.log('❌ Guest user not found in database, will create new user');
+        }
       }
+      console.log('❌ Existing guest token invalid');
     } catch (error) {
+      console.log('❌ Error validating guest token:', error);
     }
   }
   
   const guestId = generateGuestId();
   const token = createGuestJWT(guestId);
+  console.log('🆕 Creating new guest user with ID:', guestId);
   
   try {
-    console.log('Creating guest user in database:', guestId);
-    await db.insert(users).values({
+    console.log('💾 Inserting guest user into database...');
+    const { db, users } = await import('../db');
+    
+    const result = await db.insert(users).values({
       id: guestId,
-      email: `guest_${guestId}@aitechj.local`,
-      passwordHash: 'guest_user_no_password', // Required field, can't be null
+      email: `${guestId}@guest.local`,
+      passwordHash: 'guest_user_no_password',
       subscriptionTier: 'guest',
       emailVerified: false,
       isActive: true,
-    });
+    }).onConflictDoNothing().returning({ id: users.id });
     
-    console.log('✅ Guest user created successfully:', guestId);
+    if (result.length === 0) {
+      console.log('⚠️ Guest user already exists, checking database...');
+      const { eq } = await import('drizzle-orm');
+      const existingUser = await db.select().from(users).where(eq(users.id, guestId)).limit(1);
+      if (existingUser.length === 0) {
+        throw new Error('Failed to create or find guest user');
+      }
+    }
+    
+    console.log('✅ Guest user created successfully in database:', guestId);
   } catch (error) {
     console.error('❌ [Guest Creation Error]', error);
-    if (error instanceof Error && (error.message.includes('duplicate key') || error.message.includes('unique constraint'))) {
-      console.log('Guest user already exists, continuing...');
-    } else {
-      throw error; // so your API returns 500 instead of silently proceeding
-    }
+    throw new Error('Failed to create guest session');
   }
   
   const user: GuestUser = {
     userId: guestId,
-    email: `guest_${guestId}@aitechj.local`,
+    email: `${guestId}@guest.local`,
     role: 'guest',
     subscriptionTier: 'guest',
     isGuest: true,
   };
   
+  console.log('🎯 Returning new guest user:', user.userId);
   return {
     user,
     token,

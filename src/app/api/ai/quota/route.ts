@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { checkQuota } from '@/lib/ai/quota';
-import { getOrCreateGuestUser, setGuestCookie } from '@/lib/auth/guest';
+import { getMonthlyUsage } from '@/lib/ai/quota';
+import { getOrCreateGuestUser, setGuestCookie, validateGuestToken } from '@/lib/auth/guest';
+import { eq } from 'drizzle-orm';
 
+function firstOfNextMonth(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 1);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,17 +21,29 @@ export async function GET(request: NextRequest) {
       if (err.name === "UnauthorizedError") {
         const existingGuestToken = request.cookies.get("guest_token")?.value;
         if (existingGuestToken) {
-          const { validateGuestToken } = await import('@/lib/auth/guest');
-          const guestUser = await validateGuestToken(existingGuestToken);
-          if (guestUser) {
-            user = guestUser;
-          } else {
+          user = await validateGuestToken(existingGuestToken);
+          if (!user) {
+            console.log('❌ Invalid guest token, creating new guest user');
             const guestResult = await getOrCreateGuestUser(request);
             user = guestResult.user;
             guestToken = guestResult.token;
             isNewGuest = guestResult.isNewGuest;
+          } else {
+            console.log('✅ Valid guest token found for user:', user.userId);
+            
+            const { db, users } = await import('@/lib/db');
+            const existingUser = await db.select().from(users).where(eq(users.id, user.userId)).limit(1);
+            
+            if (existingUser.length === 0) {
+              console.log('❌ Guest user not found in database, creating new one');
+              const guestResult = await getOrCreateGuestUser(request);
+              user = guestResult.user;
+              guestToken = guestResult.token;
+              isNewGuest = guestResult.isNewGuest;
+            }
           }
         } else {
+          console.log('🆕 No guest token found, creating new guest user');
           const guestResult = await getOrCreateGuestUser(request);
           user = guestResult.user;
           guestToken = guestResult.token;
@@ -38,23 +55,25 @@ export async function GET(request: NextRequest) {
     }
 
     if (!user) {
+      console.log('🆕 No user found, creating guest user');
       const guestResult = await getOrCreateGuestUser(request);
       user = guestResult.user;
       guestToken = guestResult.token;
       isNewGuest = guestResult.isNewGuest;
     }
 
-    const quotaStatus = await checkQuota(user.userId, user.subscriptionTier);
+    const usageCount = await getMonthlyUsage(user.userId);
     const limit = user.subscriptionTier === "guest" ? 3
-               : user.subscriptionTier === "basic" ? 50
-               : user.subscriptionTier === "premium" ? 200
-               : Infinity; // admin or others
+                : user.subscriptionTier === "basic" ? 50
+                : user.subscriptionTier === "premium" ? 200
+                : Infinity;
+    
+    console.log('📊 Quota check result:', { userId: user.userId, used: usageCount, limit });
     
     const response = NextResponse.json({
-      used: quotaStatus.used,
-      limit: limit,
-      allowed: quotaStatus.allowed,
-      resetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString(),
+      used: usageCount,
+      quota: limit,
+      resetDate: firstOfNextMonth().toISOString()
     }, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

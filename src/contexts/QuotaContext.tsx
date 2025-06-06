@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 interface QuotaData {
   used: number;
-  limit: number;
+  quota: number;
   resetDate: string;
 }
 
@@ -33,7 +33,11 @@ export function QuotaProvider({ children }: QuotaProviderProps) {
       });
       if (response.ok) {
         const data = await response.json();
-        setQuota(data);
+        setQuota({
+          used: data.used,
+          quota: data.quota,
+          resetDate: data.resetDate
+        });
       }
     } catch (error) {
       console.error('Failed to refresh quota:', error);

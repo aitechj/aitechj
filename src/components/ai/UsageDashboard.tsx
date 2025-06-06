@@ -7,7 +7,7 @@ export function UsageDashboard() {
 
   if (!quota) return <div>Loading...</div>;
 
-  const percentage = (quota.used / quota.limit) * 100;
+  const percentage = (quota.used / quota.quota) * 100;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
@@ -16,7 +16,7 @@ export function UsageDashboard() {
       <div className="mb-4">
         <div className="flex justify-between text-sm text-gray-600 mb-1">
           <span>Questions Used</span>
-          <span>{quota.used}/{quota.limit}</span>
+          <span>{quota.used}/{quota.quota}</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 

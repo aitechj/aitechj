@@ -27,10 +27,35 @@ const ChatInputSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    let user = await getCurrentUser();
+    let user;
     let guestToken = null;
     let isNewGuest = false;
     
+    try {
+      user = await getCurrentUser();
+    } catch (err: any) {
+      if (err.name === "UnauthorizedError") {
+        const existingGuestToken = request.cookies.get("guest_token")?.value;
+        if (existingGuestToken) {
+          const { validateGuestToken } = await import('@/lib/auth/guest');
+          user = await validateGuestToken(existingGuestToken);
+          if (!user) {
+            const guestResult = await getOrCreateGuestUser(request);
+            user = guestResult.user;
+            guestToken = guestResult.token;
+            isNewGuest = guestResult.isNewGuest;
+          }
+        } else {
+          const guestResult = await getOrCreateGuestUser(request);
+          user = guestResult.user;
+          guestToken = guestResult.token;
+          isNewGuest = guestResult.isNewGuest;
+        }
+      } else {
+        throw err;
+      }
+    }
+
     if (!user) {
       const guestResult = await getOrCreateGuestUser(request);
       user = guestResult.user;
@@ -55,13 +80,17 @@ export async function POST(request: NextRequest) {
     }));
     const sanitizedContext = contextContent ? sanitizeInput(contextContent) : undefined;
 
-    const usageCount = await checkQuota(user!.userId, user!.subscriptionTier);
-    const limit = user!.subscriptionTier === "guest" ? 3
-                : user!.subscriptionTier === "basic" ? 50
-                : user!.subscriptionTier === "premium" ? 200
-                : Infinity; // admin
+    const { getMonthlyUsage } = await import('@/lib/ai/quota');
+    const usageCount = await getMonthlyUsage(user.userId);
+    const limit = user.subscriptionTier === "guest" ? 3 
+                : user.subscriptionTier === "basic" ? 50 
+                : user.subscriptionTier === "premium" ? 200
+                : Infinity;
     
-    if (usageCount.used >= limit) {
+    console.log('🔍 Quota check before OpenAI:', { userId: user.userId, used: usageCount, limit });
+    
+    if (usageCount >= limit) {
+      console.log('❌ Quota exceeded, blocking request');
       const response = NextResponse.json(
         { error: 'Monthly quota exceeded. Please upgrade your plan for more questions.' },
         { status: 429 }
@@ -77,10 +106,24 @@ export async function POST(request: NextRequest) {
     const cacheKey = generateCacheKey(sanitizedMessages, sanitizedContext);
     const cachedResponse = await getCachedResponse(cacheKey);
     if (cachedResponse) {
+      try {
+        const cachedConversationResult = await db.insert(aiConversations).values({
+          userId: user!.userId,
+          conversationId: `conv_cached_${Date.now()}_${user!.userId}`,
+          messages: [...sanitizedMessages, { role: 'assistant', content: cachedResponse.content }],
+          tokensUsed: cachedResponse.tokensUsed || 0,
+        }).returning({ id: aiConversations.id });
+        
+        console.log('✅ Cached conversation logged for user:', user!.userId, 'conversation ID:', cachedConversationResult[0]?.id);
+      } catch (dbError) {
+        console.error('❌ Failed to insert cached conversation:', dbError);
+        console.error('❌ Cached database error details:', JSON.stringify(dbError, null, 2));
+      }
+
       const response = NextResponse.json({ 
         ...cachedResponse, 
         cached: true,
-        quota: usageCount
+        quota: usageCount + 1
       });
 
       if (guestToken && isNewGuest) {
@@ -93,15 +136,17 @@ export async function POST(request: NextRequest) {
     const aiResponse = await generateAIResponse(sanitizedMessages, user!.subscriptionTier, sanitizedContext);
 
     try {
-      await db.insert(aiConversations).values({
+      const conversationResult = await db.insert(aiConversations).values({
         userId: user!.userId,
-        conversationId: `conv_${Date.now()}`,
+        conversationId: `conv_${Date.now()}_${user!.userId}`,
         messages: [...sanitizedMessages, { role: 'assistant', content: aiResponse.content }],
         tokensUsed: aiResponse.tokensUsed,
-      });
-      console.log('✅ Conversation logged for user:', user!.userId);
+      }).returning({ id: aiConversations.id });
+      
+      console.log('✅ Conversation logged for user:', user!.userId, 'conversation ID:', conversationResult[0]?.id);
     } catch (dbError) {
       console.error('❌ Failed to insert conversation:', dbError);
+      console.error('❌ Database error details:', JSON.stringify(dbError, null, 2));
     }
 
     await setCachedResponse(cacheKey, aiResponse);

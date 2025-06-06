@@ -88,8 +88,8 @@ export function ChatInterface() {
       <div className="border-t p-4">
         {quota && (
           <div className="text-sm text-gray-600 mb-2">
-            Questions used: {quota.used}/{quota.limit} this month
-            {quota.used >= quota.limit && (
+            Questions used: {quota.used}/{quota.quota} this month
+            {quota.used >= quota.quota && (
               <span className="text-red-600 ml-2">Quota exceeded</span>
             )}
           </div>
@@ -103,7 +103,7 @@ export function ChatInterface() {
             onKeyPress={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (!loading && input.trim() && (!quota || quota.used < quota.limit)) {
+                if (!loading && input.trim() && (!quota || quota.used < quota.quota)) {
                   sendMessage();
                 }
               }
@@ -111,7 +111,7 @@ export function ChatInterface() {
           />
           <Button 
             onClick={sendMessage} 
-            disabled={loading || !input.trim() || (quota ? quota.used >= quota.limit : false)}
+            disabled={loading || !input.trim() || (quota ? quota.used >= quota.quota : false)}
           >
             {loading ? 'Sending...' : 'Send'}
           </Button>
