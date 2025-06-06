@@ -31,7 +31,15 @@ export function signJWT(payload: Record<string, any>, expiresIn?: string): strin
   };
 
   const now = Math.floor(Date.now() / 1000);
-  const exp = expiresIn === '15m' ? now + 15 * 60 : now + 60 * 60; // 15 minutes or 1 hour
+  let exp = now + 60 * 60; // default 1 hour
+  
+  if (expiresIn === '15m') {
+    exp = now + 15 * 60;
+  } else if (expiresIn === '24h') {
+    exp = now + 24 * 60 * 60;
+  } else if (expiresIn === '30d') {
+    exp = now + 30 * 24 * 60 * 60;
+  }
 
   const jwtPayload = {
     ...payload,
