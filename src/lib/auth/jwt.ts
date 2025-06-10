@@ -111,7 +111,7 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
     }
     
     return await verifyJWT(token);
-  } catch (error) {
+  } catch (error: any) {
     if (error.name === 'UnauthorizedError') {
       throw error;
     }
