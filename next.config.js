@@ -5,10 +5,6 @@ const nextConfig = {
   },
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
-  },
-  vercel: {
-    analytics: false,
-    feedback: false
   }
 }
 
