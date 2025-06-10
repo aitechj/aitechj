@@ -35,8 +35,16 @@ export default function AdminDashboard() {
     const isPreview = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
     
     if (isPreview) {
+      console.log('🔧 Preview mode detected, checking localStorage authentication');
       const accessToken = localStorage.getItem('access_token');
       const expiresAt = localStorage.getItem('token_expires_at');
+      
+      console.log('🔧 Preview auth check:', {
+        hasAccessToken: !!accessToken,
+        hasExpiresAt: !!expiresAt,
+        expiresAt: expiresAt,
+        currentTime: Date.now()
+      });
       
       if (!accessToken || !expiresAt) {
         console.log('🔧 Preview mode: no auth tokens found, redirecting to login');
@@ -44,14 +52,17 @@ export default function AdminDashboard() {
         return;
       }
       
-      if (Date.now() > parseInt(expiresAt)) {
+      const expirationTime = parseInt(expiresAt);
+      if (Date.now() > expirationTime) {
         console.log('🔧 Preview mode: tokens expired, clearing and redirecting to login');
         localStorage.clear();
         window.location.href = '/auth/login';
         return;
       }
       
-      console.log('🔧 Preview mode: authenticated via localStorage');
+      console.log('🔧 Preview mode: authenticated via localStorage - access granted');
+    } else {
+      console.log('🔧 Production mode: relying on HTTP-only cookies via middleware');
     }
   };
 

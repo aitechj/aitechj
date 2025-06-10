@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
         response.headers.set('X-Content-Type-Options', 'nosniff');
         response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
         response.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
-        console.log('🔧 Preview mode: allowing access to protected route, client-side auth required');
+        console.log('🔧 Preview mode: allowing access to protected route, client-side auth will handle localStorage check');
         return response;
       }
       
