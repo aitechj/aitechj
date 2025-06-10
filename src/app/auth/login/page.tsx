@@ -27,10 +27,19 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
+        if (data.isPreview && data.tokens) {
+          console.log('🔧 Preview mode: storing tokens in localStorage');
+          localStorage.setItem('access_token', data.tokens.access_token);
+          localStorage.setItem('refresh_token', data.tokens.refresh_token);
+          localStorage.setItem('token_expires_at', data.tokens.expires_at.toString());
+          localStorage.setItem('user_data', JSON.stringify(data.user));
+        }
+        
         router.push('/admin');
       } else {
-        const data = await response.json();
         setError(data.error || 'Login failed');
       }
     } catch (err) {

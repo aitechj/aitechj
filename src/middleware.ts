@@ -4,6 +4,7 @@ import { verifyJWT } from './lib/auth/jwt';
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('access_token')?.value;
+  const isPreview = process.env.VERCEL_ENV === 'preview';
 
   const protectedPaths = ['/dashboard', '/admin', '/profile'];
   const isProtectedPath = protectedPaths.some(path => 
@@ -12,6 +13,17 @@ export async function middleware(request: NextRequest) {
 
   if (isProtectedPath) {
     if (!token) {
+      if (isPreview) {
+        const response = NextResponse.next();
+        response.headers.set('x-preview-auth-required', 'true');
+        response.headers.set('X-Frame-Options', 'DENY');
+        response.headers.set('X-Content-Type-Options', 'nosniff');
+        response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        response.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
+        console.log('🔧 Preview mode: allowing access to protected route, client-side auth required');
+        return response;
+      }
+      
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 

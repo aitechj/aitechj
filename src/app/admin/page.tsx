@@ -26,9 +26,34 @@ export default function AdminDashboard() {
   const [csrfToken, setCsrfToken] = useState('');
 
   useEffect(() => {
+    checkPreviewAuth();
     fetchTopics();
     fetchCSRFToken();
   }, []);
+
+  const checkPreviewAuth = () => {
+    const isPreview = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
+    
+    if (isPreview) {
+      const accessToken = localStorage.getItem('access_token');
+      const expiresAt = localStorage.getItem('token_expires_at');
+      
+      if (!accessToken || !expiresAt) {
+        console.log('🔧 Preview mode: no auth tokens found, redirecting to login');
+        window.location.href = '/auth/login';
+        return;
+      }
+      
+      if (Date.now() > parseInt(expiresAt)) {
+        console.log('🔧 Preview mode: tokens expired, clearing and redirecting to login');
+        localStorage.clear();
+        window.location.href = '/auth/login';
+        return;
+      }
+      
+      console.log('🔧 Preview mode: authenticated via localStorage');
+    }
+  };
 
   const fetchCSRFToken = async () => {
     try {
@@ -87,8 +112,24 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">Manage topics, sections, and content</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="mt-2 text-gray-600">Manage topics, sections, and content</p>
+            </div>
+            <Button 
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  localStorage.clear();
+                }
+                window.location.href = '/auth/login';
+              }}
+              variant="outline"
+              className="text-red-600 border-red-600 hover:bg-red-50"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
 
         <div className="bg-white shadow rounded-lg">

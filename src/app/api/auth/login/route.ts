@@ -94,28 +94,58 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
+    const isPreview = process.env.VERCEL_ENV === 'preview';
     console.log('🍪 Setting cookies with config:', {
       secure: true,
-      sameSite: 'none', // Required for Vercel preview domains
+      sameSite: isPreview ? 'none' : 'lax',
       path: '/',
-      httpOnly: true
+      httpOnly: !isPreview, // Use localStorage for preview, HTTP-only for production
+      isPreview
     });
 
-    response.cookies.set('access_token', accessToken, {
-      httpOnly: true,
-      secure: true, // Required for sameSite: 'none'
-      sameSite: 'none', // Critical fix for Vercel deployment cookie setting
-      path: '/',
-      maxAge: 15 * 60, // 15 minutes
-    });
+    if (isPreview) {
+      const clientTokens = {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_at: Date.now() + (15 * 60 * 1000) // 15 minutes from now
+      };
+      
+      const previewResponse = NextResponse.json(
+        {
+          message: 'Login successful',
+          user: {
+            id: user.id,
+            email: user.email,
+            role: role?.name || 'guest',
+            subscriptionTier: user.subscriptionTier || 'guest',
+            emailVerified: user.emailVerified,
+            lastLogin: user.lastLogin,
+          },
+          tokens: clientTokens, // Include tokens for preview deployment
+          isPreview: true
+        },
+        { status: 200 }
+      );
+      
+      console.log('🍪 Preview mode: sending tokens in response body for client-side storage');
+      return previewResponse;
+    } else {
+      response.cookies.set('access_token', accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax', // Lax is fine for same-origin production domains
+        path: '/',
+        maxAge: 15 * 60, // 15 minutes
+      });
 
-    response.cookies.set('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: true, // Required for sameSite: 'none'
-      sameSite: 'none', // Critical fix for Vercel deployment cookie setting
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
+      response.cookies.set('refresh_token', refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax', // Lax is fine for same-origin production domains
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+      });
+    }
 
     console.log('🍪 Cookies set successfully in response');
 
