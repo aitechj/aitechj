@@ -3,7 +3,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
 
 export interface JWTPayload {
   userId: string;
-  email: string;
+  email: string | null;
   role: string;
   subscriptionTier: string;
   iat?: number;
@@ -31,7 +31,15 @@ export function signJWT(payload: Record<string, any>, expiresIn?: string): strin
   };
 
   const now = Math.floor(Date.now() / 1000);
-  const exp = expiresIn === '15m' ? now + 15 * 60 : now + 60 * 60; // 15 minutes or 1 hour
+  let exp = now + 60 * 60; // default 1 hour
+  
+  if (expiresIn === '15m') {
+    exp = now + 15 * 60;
+  } else if (expiresIn === '24h') {
+    exp = now + 24 * 60 * 60;
+  } else if (expiresIn === '30d') {
+    exp = now + 30 * 24 * 60 * 60;
+  }
 
   const jwtPayload = {
     ...payload,
@@ -94,15 +102,22 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
   try {
     const { cookies } = await import('next/headers');
     const cookieStore = cookies();
-    const token = cookieStore.get('access_token')?.value;
+    const token = cookieStore.get('access_token')?.value || cookieStore.get('guest_token')?.value;
     
     if (!token) {
-      return null;
+      const error = new Error('No authentication token found');
+      error.name = 'UnauthorizedError';
+      throw error;
     }
     
     return await verifyJWT(token);
   } catch (error) {
+    if (error.name === 'UnauthorizedError') {
+      throw error;
+    }
     console.error('Get current user failed:', error);
-    return null;
+    const authError = new Error('Authentication failed');
+    authError.name = 'UnauthorizedError';
+    throw authError;
   }
 }

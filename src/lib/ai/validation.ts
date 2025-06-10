@@ -5,7 +5,7 @@ export const sanitizeInput = (input: string): string => {
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<[^>]*>/g, '')
     .trim()
-    .slice(0, 2000);
+    .slice(0, 2048);
 };
 
 export const validateChatInput = (messages: any[]): boolean => {
@@ -25,7 +25,7 @@ export const validateChatInput = (messages: any[]): boolean => {
 export const ChatInputSchema = z.object({
   messages: z.array(z.object({
     role: z.enum(['user', 'assistant', 'system']),
-    content: z.string().min(1).max(2000),
+    content: z.string().min(1).max(2048),
   })).min(1).max(50),
   contextContent: z.string().max(5000).optional(),
 });

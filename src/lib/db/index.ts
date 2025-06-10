@@ -2,11 +2,22 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 
+if (typeof window === 'undefined') {
+  require('dotenv').config({ path: '.env.local' });
+}
+
 const isLocalDev = process.env.NODE_ENV === 'development';
 const databaseUrl = process.env.DATABASE_URL;
 const useStubDb = process.env.USE_STUB_DB === 'true';
 const isVercelBuild = process.env.VERCEL === '1' && process.env.VERCEL_ENV === undefined;
 const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || isVercelBuild || !databaseUrl;
+
+console.log('Database connection debug:', {
+  NODE_ENV: process.env.NODE_ENV,
+  DATABASE_URL_EXISTS: !!databaseUrl,
+  USE_STUB_DB: useStubDb,
+  IS_BUILD_TIME: isBuildTime
+});
 
 let client: any = null;
 let db: any = null;

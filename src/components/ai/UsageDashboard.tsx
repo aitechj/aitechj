@@ -1,30 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useQuota } from '@/contexts/QuotaContext';
 
 export function UsageDashboard() {
-  const [quota, setQuota] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { quota } = useQuota();
 
-  useEffect(() => {
-    fetchQuota();
-  }, []);
+  if (!quota) return <div>Loading...</div>;
 
-  const fetchQuota = async () => {
-    try {
-      const response = await fetch('/api/ai/quota');
-      const data = await response.json();
-      setQuota(data);
-    } catch (error) {
-      console.error('Failed to fetch quota:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) return <div>Loading...</div>;
-  if (!quota) return <div>Unable to load usage data</div>;
-
-  const percentage = (quota.used / quota.limit) * 100;
+  const percentage = (quota.used / quota.quota) * 100;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
@@ -33,7 +16,7 @@ export function UsageDashboard() {
       <div className="mb-4">
         <div className="flex justify-between text-sm text-gray-600 mb-1">
           <span>Questions Used</span>
-          <span>{quota.used}/{quota.limit}</span>
+          <span>{quota.used}/{quota.quota}</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 

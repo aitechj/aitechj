@@ -37,7 +37,7 @@ export async function generateAIResponse(
   subscriptionTier: string,
   contextContent?: string
 ) {
-  const model = subscriptionTier === 'premium' ? 'gpt-4' : 'gpt-3.5-turbo';
+  const model = subscriptionTier === 'premium' || subscriptionTier === 'admin' ? 'gpt-4' : 'gpt-3.5-turbo';
   
   const systemMessage: ChatMessage = {
     role: 'system',
@@ -61,7 +61,7 @@ export async function generateAIResponse(
     const completion = await openai.chat.completions.create({
       model,
       messages: [systemMessage, ...messages],
-      max_tokens: subscriptionTier === 'premium' ? 1000 : 500,
+      max_tokens: subscriptionTier === 'guest' ? 150 : subscriptionTier === 'premium' || subscriptionTier === 'admin' ? 1000 : 500,
       temperature: 0.7,
     });
 

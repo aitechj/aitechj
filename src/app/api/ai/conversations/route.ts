@@ -2,11 +2,46 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '../../../../lib/auth/jwt';
 import { db, aiConversations } from '../../../../lib/db';
 import { eq, desc } from 'drizzle-orm';
+import { getOrCreateGuestUser, setGuestCookie } from '../../../../lib/auth/guest';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    let user;
+    
+    try {
+      user = await getCurrentUser();
+      console.log('✅ Authenticated user found for conversations:', user?.userId);
+    } catch (err: any) {
+      if (err.name === "UnauthorizedError") {
+        console.log('🔍 No authenticated user, checking for guest token...');
+        const existingGuestToken = request.cookies.get("guest_token")?.value;
+        
+        if (existingGuestToken) {
+          const { validateGuestToken } = await import('@/lib/auth/guest');
+          user = await validateGuestToken(existingGuestToken);
+          
+          if (!user) {
+            console.log('❌ Invalid guest token, creating new guest user');
+            const guestResult = await getOrCreateGuestUser(request);
+            user = guestResult.user;
+          } else {
+            console.log('✅ Valid guest token found for conversations:', user.userId);
+          }
+        } else {
+          console.log('🆕 No guest token found, creating new guest user');
+          const guestResult = await getOrCreateGuestUser(request);
+          user = guestResult.user;
+        }
+      } else {
+        console.error('❌ Authentication error in conversations:', err);
+        throw err;
+      }
+    }
+
     if (!user) {
+      console.log('❌ No user found after all attempts in conversations');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -22,12 +57,17 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
+    console.log('📋 Found conversations for user:', user.userId, 'count:', conversations.length);
+
     return NextResponse.json({ conversations });
 
   } catch (error) {
-    console.error('Conversations fetch error:', error);
+    console.error('❌ Conversations fetch error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('❌ Error stack:', errorStack);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: errorMessage },
       { status: 500 }
     );
   }
