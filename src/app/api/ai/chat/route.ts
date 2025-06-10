@@ -125,7 +125,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         ...cachedResponse, 
         cached: true,
-        quota: quotaResult.used
+        quota: quotaResult.used,
+        threadId: user.userId
       });
     }
 
@@ -169,7 +170,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       ...aiResponse, 
       cached: false,
-      quota: quotaResult.used
+      quota: quotaResult.used,
+      threadId: user.userId
     });
 
   } catch (error) {

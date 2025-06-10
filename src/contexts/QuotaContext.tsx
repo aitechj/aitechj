@@ -30,8 +30,15 @@ export function QuotaProvider({ children }: QuotaProviderProps) {
 
   const refreshQuota = async (retryCount = 0) => {
     try {
+      const threadId = localStorage.getItem('threadId');
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (threadId) {
+        headers['X-Thread-ID'] = threadId;
+      }
+      
       const response = await fetch('/api/ai/quota', {
-        credentials: 'include'
+        credentials: 'include',
+        headers
       });
       if (response.ok) {
         const data = await response.json();
