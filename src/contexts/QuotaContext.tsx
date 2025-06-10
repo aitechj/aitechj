@@ -9,12 +9,14 @@ interface QuotaData {
 
 interface QuotaContextType {
   quota: QuotaData | null;
-  refreshQuota: () => Promise<void>;
+  refreshQuota: (retryCount?: number) => Promise<void>;
+  setQuota: React.Dispatch<React.SetStateAction<QuotaData | null>>;
 }
 
 const QuotaContext = createContext<QuotaContextType>({
   quota: null,
   refreshQuota: async () => {},
+  setQuota: () => {},
 });
 
 export const useQuota = () => useContext(QuotaContext);
@@ -26,7 +28,7 @@ interface QuotaProviderProps {
 export function QuotaProvider({ children }: QuotaProviderProps) {
   const [quota, setQuota] = useState<QuotaData | null>(null);
 
-  const refreshQuota = async () => {
+  const refreshQuota = async (retryCount = 0) => {
     try {
       const response = await fetch('/api/ai/quota', {
         credentials: 'include'
@@ -39,12 +41,17 @@ export function QuotaProvider({ children }: QuotaProviderProps) {
           resetDate: data.resetDate
         });
       } else {
-        console.error('Quota API returned error:', response.status, response.statusText);
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Error details:', errorData);
+        throw new Error(`Quota API returned ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('Failed to refresh quota:', error);
+      
+      if (retryCount < 3) { // QUOTA_CONFIG.RETRY_ATTEMPTS would be ideal but not accessible here
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        setTimeout(() => {
+          refreshQuota(retryCount + 1);
+        }, delay);
+      }
     }
   };
 
@@ -53,7 +60,7 @@ export function QuotaProvider({ children }: QuotaProviderProps) {
   }, []);
 
   return (
-    <QuotaContext.Provider value={{ quota, refreshQuota }}>
+    <QuotaContext.Provider value={{ quota, refreshQuota, setQuota }}>
       {children}
     </QuotaContext.Provider>
   );

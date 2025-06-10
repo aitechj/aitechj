@@ -129,22 +129,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { getMonthlyUsage } = await import('@/lib/ai/quota');
-    const usageCount = await getMonthlyUsage(user.userId);
-    const limit = user.subscriptionTier === "guest" ? 3 
-                : user.subscriptionTier === "basic" ? 50 
-                : user.subscriptionTier === "premium" ? 200
-                : Infinity;
-    
-    console.log('🔍 Quota check before OpenAI:', { userId: user.userId, used: usageCount, limit });
-    
-    if (usageCount >= limit) {
-      console.log('❌ Quota exceeded, blocking request');
-      return NextResponse.json(
-        { error: 'Monthly quota exceeded. Please upgrade your plan for more questions.' },
-        { status: 429 }
-      );
-    }
 
     const aiResponse = await generateAIResponse(sanitizedMessages, user.subscriptionTier, sanitizedContext);
 

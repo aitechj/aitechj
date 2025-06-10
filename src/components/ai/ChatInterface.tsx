@@ -13,7 +13,7 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const { quota, refreshQuota } = useQuota();
+  const { quota, refreshQuota, setQuota } = useQuota();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -46,13 +46,28 @@ export function ChatInterface() {
       
       if (response.ok) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
-        await refreshQuota();
+        
+        if (quota) {
+          setQuota(prev => prev ? { ...prev, used: prev.used + 1 } : null);
+        }
+        
+        try {
+          await refreshQuota();
+        } catch (error) {
+          if (quota) {
+            setQuota(prev => prev ? { ...prev, used: prev.used - 1 } : null);
+          }
+        }
       } else {
         const errorMessage = response.status === 429 
           ? data.error || 'Monthly quota exceeded. Please upgrade your plan for more questions.'
           : `Error: ${data.error || 'Something went wrong'}`;
         setMessages(prev => [...prev, { role: 'assistant', content: errorMessage }]);
-        await refreshQuota();
+        try {
+          await refreshQuota();
+        } catch (error) {
+          console.error('Failed to refresh quota after error:', error);
+        }
       }
     } catch (error) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong.' }]);
