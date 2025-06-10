@@ -25,44 +25,96 @@ let db: any = null;
 function createStubDb() {
   const stubLocks = new Map<string, Promise<void>>();
   
-  const createQueryChain = () => ({
-    where: () => createQueryChain(),
-    leftJoin: () => createQueryChain(),
-    limit: () => createQueryChain(),
-    offset: () => createQueryChain(),
-    orderBy: () => createQueryChain(),
-    then: (resolve: any) => resolve([]),
-    catch: (reject: any) => Promise.resolve([])
+  const stubStorage = {
+    users: new Map<string, any>(),
+    aiConversations: new Map<string, any>(),
+  };
+  
+  const createQueryChain = (tableName: string, data: any[] = []) => ({
+    where: (condition: any) => createQueryChain(tableName, data),
+    leftJoin: () => createQueryChain(tableName, data),
+    limit: (count: number) => createQueryChain(tableName, data.slice(0, count)),
+    offset: (count: number) => createQueryChain(tableName, data.slice(count)),
+    orderBy: () => createQueryChain(tableName, data),
+    then: (resolve: any) => resolve(data),
+    catch: (reject: any) => Promise.resolve(data)
   });
 
   return {
-    select: () => ({
-      from: () => createQueryChain()
+    select: (fields?: any) => ({
+      from: (table: any) => {
+        console.log('🔍 Stub database select called with table:', table?.constructor?.name || 'unknown');
+        const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
+        console.log('🔍 Stub database select from:', tableName);
+        
+        if (tableName === 'users') {
+          const userData = Array.from(stubStorage.users.values());
+          console.log('🔍 Returning users data:', userData.length, 'records');
+          return createQueryChain('users', userData);
+        } else if (tableName === 'ai_conversations') {
+          const conversationData = Array.from(stubStorage.aiConversations.values());
+          console.log('🔍 Returning ai_conversations data:', conversationData.length, 'records');
+          return createQueryChain('ai_conversations', conversationData);
+        }
+        
+        console.log('🔍 Unknown table, returning empty data for:', tableName);
+        return createQueryChain(tableName, []);
+      }
     }),
-    insert: () => ({
-      values: () => ({
-        returning: () => Promise.resolve([{ id: `stub_${Date.now()}` }]),
+    insert: (table: any) => ({
+      values: (data: any) => ({
+        returning: (fields?: any) => {
+          const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
+          const id = `stub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          const record = { ...data, id };
+          
+          console.log(`💾 Stub database inserting into ${tableName}:`, record);
+          
+          if (tableName === 'users') {
+            stubStorage.users.set(data.id || id, record);
+          } else if (tableName === 'ai_conversations') {
+            stubStorage.aiConversations.set(id, record);
+          }
+          
+          return Promise.resolve([{ id: data.id || id }]);
+        },
         onConflictDoNothing: () => ({
-          returning: () => Promise.resolve([{ id: `stub_${Date.now()}` }])
+          returning: (fields?: any) => {
+            const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
+            const id = `stub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const record = { ...data, id };
+            
+            console.log(`💾 Stub database inserting (on conflict do nothing) into ${tableName}:`, record);
+            
+            if (tableName === 'users') {
+              if (!stubStorage.users.has(data.id)) {
+                stubStorage.users.set(data.id || id, record);
+              }
+            } else if (tableName === 'ai_conversations') {
+              stubStorage.aiConversations.set(id, record);
+            }
+            
+            return Promise.resolve([{ id: data.id || id }]);
+          }
         })
       })
     }),
-    update: () => ({
-      set: () => ({
-        where: () => ({
-          returning: () => Promise.resolve([])
+    update: (table: any) => ({
+      set: (data: any) => ({
+        where: (condition: any) => ({
+          returning: (fields?: any) => Promise.resolve([])
         })
       })
     }),
-    delete: () => ({
-      where: () => ({
-        returning: () => Promise.resolve([])
+    delete: (table: any) => ({
+      where: (condition: any) => ({
+        returning: (fields?: any) => Promise.resolve([])
       })
     }),
     query: () => Promise.resolve([]),
     transaction: async (callback: any) => {
       console.log('🔧 Stub database transaction started with locking simulation');
-      const lockKey = 'quota_lock'; // Simple global lock for stub
+      const lockKey = 'quota_lock';
       
       if (stubLocks.has(lockKey)) {
         await stubLocks.get(lockKey);
@@ -76,14 +128,57 @@ function createStubDb() {
       
       try {
         const result = await callback({
-          select: () => ({
-            from: () => createQueryChain()
+          select: (fields?: any) => ({
+            from: (table: any) => {
+              const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
+              console.log('🔍 Stub transaction select from:', tableName);
+              
+              if (tableName === 'users') {
+                const userData = Array.from(stubStorage.users.values());
+                return createQueryChain('users', userData);
+              } else if (tableName === 'ai_conversations') {
+                const conversationData = Array.from(stubStorage.aiConversations.values());
+                return createQueryChain('ai_conversations', conversationData);
+              }
+              
+              return createQueryChain(tableName, []);
+            }
           }),
-          insert: () => ({
-            values: () => ({
-              returning: () => Promise.resolve([{ id: `stub_tx_${Date.now()}` }]),
+          insert: (table: any) => ({
+            values: (data: any) => ({
+              returning: (fields?: any) => {
+                const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
+                const id = `stub_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const record = { ...data, id };
+                
+                console.log(`💾 Stub transaction inserting into ${tableName}:`, record);
+                
+                if (tableName === 'users') {
+                  stubStorage.users.set(data.id || id, record);
+                } else if (tableName === 'ai_conversations') {
+                  stubStorage.aiConversations.set(id, record);
+                }
+                
+                return Promise.resolve([{ id: data.id || id }]);
+              },
               onConflictDoNothing: () => ({
-                returning: () => Promise.resolve([{ id: `stub_tx_${Date.now()}` }])
+                returning: (fields?: any) => {
+                  const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
+                  const id = `stub_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                  const record = { ...data, id };
+                  
+                  console.log(`💾 Stub transaction inserting (on conflict do nothing) into ${tableName}:`, record);
+                  
+                  if (tableName === 'users') {
+                    if (!stubStorage.users.has(data.id)) {
+                      stubStorage.users.set(data.id || id, record);
+                    }
+                  } else if (tableName === 'ai_conversations') {
+                    stubStorage.aiConversations.set(id, record);
+                  }
+                  
+                  return Promise.resolve([{ id: data.id || id }]);
+                }
               })
             })
           }),
