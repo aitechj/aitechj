@@ -95,24 +95,24 @@ export async function POST(request: NextRequest) {
     );
 
     console.log('🍪 Setting cookies with config:', {
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none', // Required for Vercel preview domains
       path: '/',
       httpOnly: true
     });
 
     response.cookies.set('access_token', accessToken, {
       httpOnly: true,
-      secure: true, // Force secure for HTTPS deployment
-      sameSite: 'lax',
+      secure: true, // Required for sameSite: 'none'
+      sameSite: 'none', // Critical fix for Vercel deployment cookie setting
       path: '/',
       maxAge: 15 * 60, // 15 minutes
     });
 
     response.cookies.set('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: true, // Force secure for HTTPS deployment
-      sameSite: 'lax',
+      secure: true, // Required for sameSite: 'none'
+      sameSite: 'none', // Critical fix for Vercel deployment cookie setting
       path: '/',
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
