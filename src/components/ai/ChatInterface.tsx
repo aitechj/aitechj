@@ -47,6 +47,11 @@ export function ChatInterface() {
       if (response.ok) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
         
+        if (data.threadId) {
+          localStorage.setItem('threadId', data.threadId);
+          console.log('💾 Saved threadId to localStorage:', data.threadId);
+        }
+        
         if (quota) {
           setQuota(prev => prev ? { ...prev, used: prev.used + 1 } : null);
         }
@@ -58,7 +63,7 @@ export function ChatInterface() {
             setQuota(prev => prev ? { ...prev, used: prev.used - 1 } : null);
           }
         }
-      } else {
+      }else {
         const errorMessage = response.status === 429 
           ? data.error || 'Monthly quota exceeded. Please upgrade your plan for more questions.'
           : `Error: ${data.error || 'Something went wrong'}`;
