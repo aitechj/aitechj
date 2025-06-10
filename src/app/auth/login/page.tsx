@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { PasswordInput } from '../../../components/ui/PasswordInput';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,19 +21,12 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.ok) {
+      const result = await login(email, password);
+      
+      if (result.success) {
         router.push('/admin');
       } else {
-        const data = await response.json();
-        setError(data.error || 'Login failed');
+        setError(result.error || 'Login failed');
       }
     } catch (err) {
       setError('Network error occurred');

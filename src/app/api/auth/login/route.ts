@@ -74,20 +74,26 @@ export async function POST(request: NextRequest) {
     const refreshToken = await generateRefreshToken();
     await storeRefreshToken(user.id, refreshToken);
 
-    const response = NextResponse.json(
-      {
-        message: 'Login successful',
-        user: {
-          id: user.id,
-          email: user.email,
-          role: role?.name || 'guest',
-          subscriptionTier: user.subscriptionTier || 'guest',
-          emailVerified: user.emailVerified,
-          lastLogin: user.lastLogin,
-        },
+    const responseData: any = {
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: role?.name || 'guest',
+        subscriptionTier: user.subscriptionTier || 'guest',
+        emailVerified: user.emailVerified,
+        lastLogin: user.lastLogin,
       },
-      { status: 200 }
-    );
+    };
+    
+    if (process.env.NODE_ENV !== 'production' || (request.headers.get('host') && request.headers.get('host')!.includes('.vercel.app'))) {
+      responseData.tokens = {
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      };
+    }
+    
+    const response = NextResponse.json(responseData, { status: 200 });
 
     response.cookies.set('access_token', accessToken, {
       httpOnly: true,

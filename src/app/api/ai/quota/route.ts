@@ -28,17 +28,17 @@ export async function GET(request: NextRequest) {
           console.log('✅ Valid guest token matches threadId:', user.userId);
         } else {
           console.log('⚠️ Guest token does not match threadId, creating new session');
-          guestResult = await getOrCreateGuestUser(request);
+          guestResult = await getOrCreateGuestUser(request, threadId);
           user = guestResult.user;
         }
       } else {
         console.log('⚠️ No guest token found with threadId, creating new session');
-        guestResult = await getOrCreateGuestUser(request);
+        guestResult = await getOrCreateGuestUser(request, threadId);
         user = guestResult.user;
       }
     } else {
       console.log('🔍 No threadId in header, using standard guest user flow');
-      guestResult = await getOrCreateGuestUser(request);
+      guestResult = await getOrCreateGuestUser(request, threadId);
       user = guestResult.user;
     }
     
@@ -50,11 +50,17 @@ export async function GET(request: NextRequest) {
     
     console.log('📊 Quota check result:', { userId: user.userId, used: usageCount, limit });
     
-    const response = NextResponse.json({
+    const responseData: any = {
       used: usageCount,
       quota: limit,
       resetDate: firstOfNextMonth().toISOString()
-    }, {
+    };
+    
+    if (guestResult && guestResult.isNewGuest) {
+      responseData.guestToken = guestResult.token;
+    }
+    
+    const response = NextResponse.json(responseData, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
@@ -70,6 +76,8 @@ export async function GET(request: NextRequest) {
         maxAge: 30 * 24 * 60 * 60,
         path: '/',
       });
+      
+
     }
     
     return response;
