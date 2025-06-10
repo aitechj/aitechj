@@ -1,6 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { isVercelPreview } from '@/lib/auth/environment';
 
 interface QuotaData {
   used: number;

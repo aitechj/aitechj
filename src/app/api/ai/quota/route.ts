@@ -28,17 +28,17 @@ export async function GET(request: NextRequest) {
           console.log('✅ Valid guest token matches threadId:', user.userId);
         } else {
           console.log('⚠️ Guest token does not match threadId, creating new session');
-          guestResult = await getOrCreateGuestUser(request, threadId);
+          guestResult = await getOrCreateGuestUser(request, threadId || undefined);
           user = guestResult.user;
         }
       } else {
         console.log('⚠️ No guest token found with threadId, creating new session');
-        guestResult = await getOrCreateGuestUser(request, threadId);
+        guestResult = await getOrCreateGuestUser(request, threadId || undefined);
         user = guestResult.user;
       }
     } else {
       console.log('🔍 No threadId in header, using standard guest user flow');
-      guestResult = await getOrCreateGuestUser(request, threadId);
+      guestResult = await getOrCreateGuestUser(request, threadId || undefined);
       user = guestResult.user;
     }
     
