@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Starting quota check...');
     
-    const threadId = request.headers.get('X-Thread-ID');
+    const threadId = request.headers.get('X-Thread-ID') || undefined;
     let user;
     let guestResult;
     

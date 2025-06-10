@@ -38,13 +38,21 @@ export async function validateGuestToken(token: string): Promise<GuestUser | nul
   }
 }
 
-export async function getOrCreateGuestUser(request: NextRequest): Promise<{
+export async function getOrCreateGuestUser(request: NextRequest, threadId?: string): Promise<{
   user: GuestUser;
   token: string;
   isNewGuest: boolean;
 }> {
   console.log('🔍 getOrCreateGuestUser called');
-  const existingGuestToken = request.cookies.get('guest_token')?.value;
+  let existingGuestToken = request.cookies.get('guest_token')?.value;
+  
+  if (!existingGuestToken) {
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      existingGuestToken = authHeader.substring(7);
+      console.log('🔑 Using guest token from Authorization header');
+    }
+  }
   console.log('🍪 Existing guest token:', existingGuestToken ? 'found' : 'not found');
   
   if (existingGuestToken) {
