@@ -94,9 +94,16 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
+    console.log('🍪 Setting cookies with config:', {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      httpOnly: true
+    });
+
     response.cookies.set('access_token', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Force secure for HTTPS deployment
       sameSite: 'lax',
       path: '/',
       maxAge: 15 * 60, // 15 minutes
@@ -104,11 +111,13 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Force secure for HTTPS deployment
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
+
+    console.log('🍪 Cookies set successfully in response');
 
     return response;
   } catch (error) {
