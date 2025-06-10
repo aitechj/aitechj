@@ -38,6 +38,10 @@ export function QuotaProvider({ children }: QuotaProviderProps) {
           quota: data.quota,
           resetDate: data.resetDate
         });
+      } else {
+        console.error('Quota API returned error:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error details:', errorData);
       }
     } catch (error) {
       console.error('Failed to refresh quota:', error);

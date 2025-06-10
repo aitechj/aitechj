@@ -55,19 +55,28 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
       if (decoded) {
         console.log('✅ Existing guest token valid, checking database for user:', decoded.userId);
         
-        const { db, users } = await import('../db');
-        const { eq } = await import('drizzle-orm');
-        const existingUser = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
-        
-        if (existingUser.length > 0) {
-          console.log('✅ Guest user found in database, returning existing user:', decoded.userId);
+        try {
+          const { db, users } = await import('../db');
+          const { eq } = await import('drizzle-orm');
+          const existingUser = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
+          
+          if (existingUser.length > 0) {
+            console.log('✅ Guest user found in database, returning existing user:', decoded.userId);
+            return {
+              user: decoded,
+              token: existingGuestToken,
+              isNewGuest: false,
+            };
+          } else {
+            console.log('❌ Guest user not found in database, will create new user');
+          }
+        } catch (dbError) {
+          console.log('⚠️ Database check failed, but token is valid, continuing with existing user:', dbError);
           return {
             user: decoded,
             token: existingGuestToken,
             isNewGuest: false,
           };
-        } else {
-          console.log('❌ Guest user not found in database, will create new user');
         }
       }
       console.log('❌ Existing guest token invalid');
@@ -104,8 +113,7 @@ export async function getOrCreateGuestUser(request: NextRequest): Promise<{
   } catch (error) {
     console.error('❌ [Production Guest Creation Error]', error);
     console.error('❌ Error details:', JSON.stringify(error, null, 2));
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    throw new Error(`Failed to create guest session: ${errorMessage}`);
+    console.log('⚠️ Database connection failed, but continuing with guest session');
   }
   
   const user: GuestUser = {
