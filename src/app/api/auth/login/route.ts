@@ -16,48 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, password } = loginSchema.parse(body);
 
-    if (email === 'admin@aitechj.com' && password === 'admin123') {
-      const jwtPayload: CustomJWTPayload = {
-        userId: '550e8400-e29b-41d4-a716-446655440000',
-        email: 'admin@aitechj.com',
-        role: 'admin',
-        subscriptionTier: 'premium',
-      };
 
-      const accessToken = signJWT(jwtPayload, '15m');
-      const refreshToken = await generateRefreshToken();
-
-      const response = NextResponse.json(
-        {
-          message: 'Login successful',
-          user: {
-            id: '550e8400-e29b-41d4-a716-446655440000',
-            email: 'admin@aitechj.com',
-            role: 'admin',
-            subscriptionTier: 'premium',
-            emailVerified: true,
-            lastLogin: new Date(),
-          },
-        },
-        { status: 200 }
-      );
-
-      response.cookies.set('access_token', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 15 * 60, // 15 minutes
-      });
-
-      response.cookies.set('refresh_token', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60, // 7 days
-      });
-
-      return response;
-    }
 
     const userWithRole = await db
       .select({
@@ -77,6 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { user, role } = userWithRole[0];
+    console.log('🔍 Found user:', { id: user.id, email: user.email, isActive: user.isActive, hasPasswordHash: !!user.passwordHash });
 
     if (!user.isActive) {
       return NextResponse.json(
@@ -85,7 +45,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('🔐 Verifying password for user:', user.email);
     const isPasswordValid = await verifyPassword(password, user.passwordHash);
+    console.log('🔐 Password verification result:', isPasswordValid);
+    
     if (!isPasswordValid) {
       return NextResponse.json(
         { error: 'Invalid email or password' },

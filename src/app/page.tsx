@@ -7,6 +7,10 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-center">
           Welcome to AITechJ
         </h1>
+        <div className="flex gap-4">
+          <a href="/auth/login" className="text-blue-600 hover:text-blue-800 underline">Login</a>
+          <a href="/ai-chat" className="text-green-600 hover:text-green-800 underline">AI Chat</a>
+        </div>
       </div>
 
       <div className="relative flex place-items-center">

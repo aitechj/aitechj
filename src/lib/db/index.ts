@@ -28,14 +28,141 @@ function createStubDb() {
   const stubStorage = {
     users: new Map<string, any>(),
     aiConversations: new Map<string, any>(),
+    userRoles: new Map<string, any>(),
   };
+
+  const bcrypt = require('bcryptjs');
   
-  const createQueryChain = (tableName: string, data: any[] = []) => ({
-    where: (condition: any) => createQueryChain(tableName, data),
-    leftJoin: () => createQueryChain(tableName, data),
-    limit: (count: number) => createQueryChain(tableName, data.slice(0, count)),
-    offset: (count: number) => createQueryChain(tableName, data.slice(count)),
-    orderBy: () => createQueryChain(tableName, data),
+  stubStorage.userRoles.set('1', {
+    id: 1,
+    name: 'admin',
+    description: 'Administrator with full system access',
+    permissions: JSON.stringify(['read', 'write', 'delete', 'admin'])
+  });
+  stubStorage.userRoles.set('2', {
+    id: 2,
+    name: 'user',
+    description: 'Regular user with basic access',
+    permissions: JSON.stringify(['read'])
+  });
+  stubStorage.userRoles.set('3', {
+    id: 3,
+    name: 'guest',
+    description: 'Guest user with limited access',
+    permissions: JSON.stringify(['read'])
+  });
+
+  const testAdminPassword = process.env.TEST_ADMIN_PASSWORD;
+  const testBasicPassword = process.env.TEST_BASIC_PASSWORD;
+  const testPremiumPassword = process.env.TEST_PREMIUM_PASSWORD;
+
+  if (!testAdminPassword || !testBasicPassword || !testPremiumPassword) {
+    console.warn('⚠️ Test user passwords not configured via environment variables');
+    console.warn('⚠️ Skipping test user seeding - users will need to be created via other means');
+  } else {
+
+  stubStorage.users.set('admin-user-id-12345', {
+    id: 'admin-user-id-12345',
+    email: 'admin@aitechj.com',
+    passwordHash: bcrypt.hashSync(testAdminPassword, 12),
+    roleId: 1,
+    subscriptionTier: 'admin',
+    emailVerified: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  stubStorage.users.set('basic-user-id-12345', {
+    id: 'basic-user-id-12345',
+    email: 'basic@aitechj.com',
+    passwordHash: bcrypt.hashSync(testBasicPassword, 12),
+    roleId: 2,
+    subscriptionTier: 'basic',
+    emailVerified: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  stubStorage.users.set('premium-user-id-12345', {
+    id: 'premium-user-id-12345',
+    email: 'premium@aitechj.com',
+    passwordHash: bcrypt.hashSync(testPremiumPassword, 12),
+    roleId: 2,
+    subscriptionTier: 'premium',
+    emailVerified: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+  }
+
+  console.log('🌱 Stub database pre-seeded with test users and roles');
+  
+  const createQueryChain = (tableName: string, data: any[] = [], whereConditions: any[] = []) => ({
+    where: (condition: any) => {
+      console.log('🔍 WHERE condition keys:', Object.keys(condition || {}));
+      
+      const newConditions = [...whereConditions, condition];
+      
+      let filteredData = data;
+      
+      if (condition && condition.queryChunks && Array.isArray(condition.queryChunks)) {
+        console.log('🔍 QueryChunks length:', condition.queryChunks.length);
+        
+        let targetEmail: string | null = null;
+        
+        try {
+          for (const chunk of condition.queryChunks) {
+            if (chunk && typeof chunk === 'object' && chunk.value) {
+              const value = chunk.value;
+              if (typeof value === 'string' && value.includes('@') && value.includes('.com')) {
+                targetEmail = value;
+                console.log('🔍 Found email in query chunks:', targetEmail);
+                break;
+              }
+            }
+          }
+          
+          if (targetEmail) {
+            filteredData = data.filter(record => {
+              const email = record.user ? record.user.email : record.email;
+              const matches = email === targetEmail;
+              console.log(`🔍 Email filter: ${email} === ${targetEmail} -> ${matches}`);
+              return matches;
+            });
+            console.log(`🔍 WHERE filtering ${tableName} by email: ${data.length} -> ${filteredData.length} records`);
+          } else {
+            console.log('🔍 No email found in query chunks, returning all records');
+            filteredData = data;
+          }
+        } catch (error) {
+          console.log('🔍 Error parsing query chunks:', error instanceof Error ? error.message : 'Unknown error');
+          filteredData = data;
+        }
+      } else {
+        console.log('🔍 Unknown condition structure, returning all records');
+        filteredData = data;
+      }
+      
+      return createQueryChain(tableName, filteredData, newConditions);
+    },
+    leftJoin: (joinTable: any, condition: any) => {
+      const joinedData = data.map(record => {
+        let joinedRecord = null;
+        if (tableName === 'users' && condition?.left?.name === 'roleId') {
+          const roleData = Array.from(stubStorage.userRoles.values());
+          joinedRecord = roleData.find(role => role.id === record.roleId) || null;
+        }
+        return { user: record, role: joinedRecord };
+      });
+      console.log(`🔍 LEFT JOIN ${tableName}: ${data.length} records joined`);
+      return createQueryChain(tableName, joinedData, whereConditions);
+    },
+    limit: (count: number) => createQueryChain(tableName, data.slice(0, count), whereConditions),
+    offset: (count: number) => createQueryChain(tableName, data.slice(count), whereConditions),
+    orderBy: () => createQueryChain(tableName, data, whereConditions),
     then: (resolve: any) => resolve(data),
     catch: (reject: any) => Promise.resolve(data)
   });
@@ -55,6 +182,10 @@ function createStubDb() {
           const conversationData = Array.from(stubStorage.aiConversations.values());
           console.log('🔍 Returning ai_conversations data:', conversationData.length, 'records');
           return createQueryChain('ai_conversations', conversationData);
+        } else if (tableName === 'user_roles') {
+          const roleData = Array.from(stubStorage.userRoles.values());
+          console.log('🔍 Returning user_roles data:', roleData.length, 'records');
+          return createQueryChain('user_roles', roleData);
         }
         
         console.log('🔍 Unknown table, returning empty data for:', tableName);
@@ -74,6 +205,8 @@ function createStubDb() {
             stubStorage.users.set(data.id || id, record);
           } else if (tableName === 'ai_conversations') {
             stubStorage.aiConversations.set(id, record);
+          } else if (tableName === 'user_roles') {
+            stubStorage.userRoles.set(data.id || id, record);
           }
           
           return Promise.resolve([{ id: data.id || id }]);
@@ -92,6 +225,10 @@ function createStubDb() {
               }
             } else if (tableName === 'ai_conversations') {
               stubStorage.aiConversations.set(id, record);
+            } else if (tableName === 'user_roles') {
+              if (!stubStorage.userRoles.has(data.id)) {
+                stubStorage.userRoles.set(data.id || id, record);
+              }
             }
             
             return Promise.resolve([{ id: data.id || id }]);
@@ -139,6 +276,9 @@ function createStubDb() {
               } else if (tableName === 'ai_conversations') {
                 const conversationData = Array.from(stubStorage.aiConversations.values());
                 return createQueryChain('ai_conversations', conversationData);
+              } else if (tableName === 'user_roles') {
+                const roleData = Array.from(stubStorage.userRoles.values());
+                return createQueryChain('user_roles', roleData);
               }
               
               return createQueryChain(tableName, []);
@@ -157,6 +297,8 @@ function createStubDb() {
                   stubStorage.users.set(data.id || id, record);
                 } else if (tableName === 'ai_conversations') {
                   stubStorage.aiConversations.set(id, record);
+                } else if (tableName === 'user_roles') {
+                  stubStorage.userRoles.set(data.id || id, record);
                 }
                 
                 return Promise.resolve([{ id: data.id || id }]);
@@ -175,6 +317,10 @@ function createStubDb() {
                     }
                   } else if (tableName === 'ai_conversations') {
                     stubStorage.aiConversations.set(id, record);
+                  } else if (tableName === 'user_roles') {
+                    if (!stubStorage.userRoles.has(data.id)) {
+                      stubStorage.userRoles.set(data.id || id, record);
+                    }
                   }
                   
                   return Promise.resolve([{ id: data.id || id }]);
