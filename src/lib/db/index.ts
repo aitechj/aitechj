@@ -39,7 +39,10 @@ function createStubDb() {
     }),
     insert: () => ({
       values: () => ({
-        returning: () => Promise.resolve([])
+        returning: () => Promise.resolve([{ id: `stub_${Date.now()}` }]),
+        onConflictDoNothing: () => ({
+          returning: () => Promise.resolve([{ id: `stub_${Date.now()}` }])
+        })
       })
     }),
     update: () => ({
@@ -54,7 +57,34 @@ function createStubDb() {
         returning: () => Promise.resolve([])
       })
     }),
-    query: () => Promise.resolve([])
+    query: () => Promise.resolve([]),
+    transaction: async (callback: any) => {
+      console.log('🔧 Stub database transaction started');
+      try {
+        const result = await callback({
+          select: () => ({
+            from: () => createQueryChain()
+          }),
+          insert: () => ({
+            values: () => ({
+              returning: () => Promise.resolve([{ id: `stub_tx_${Date.now()}` }]),
+              onConflictDoNothing: () => ({
+                returning: () => Promise.resolve([{ id: `stub_tx_${Date.now()}` }])
+              })
+            })
+          }),
+          execute: (sql: any) => {
+            console.log('🔧 Stub transaction execute SQL:', sql);
+            return Promise.resolve();
+          }
+        });
+        console.log('✅ Stub database transaction completed successfully');
+        return result;
+      } catch (error) {
+        console.error('❌ Stub database transaction failed:', error);
+        throw error;
+      }
+    }
   } as any;
 }
 
