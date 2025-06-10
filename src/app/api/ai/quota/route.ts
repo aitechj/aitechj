@@ -21,10 +21,8 @@ export async function GET(request: NextRequest) {
     console.log('✅ Guest user obtained:', user.userId);
     
     const usageCount = await getMonthlyUsage(user.userId);
-    const limit = user.subscriptionTier === "guest" ? 3
-                : user.subscriptionTier === "basic" ? 50
-                : user.subscriptionTier === "premium" ? 200
-                : Infinity;
+    const { getQuotaLimit } = await import('@/lib/ai/quota-config');
+    const limit = getQuotaLimit(user.subscriptionTier);
     
     console.log('📊 Quota check result:', { userId: user.userId, used: usageCount, limit });
     

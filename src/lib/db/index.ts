@@ -23,6 +23,8 @@ let client: any = null;
 let db: any = null;
 
 function createStubDb() {
+  const stubLocks = new Map<string, Promise<void>>();
+  
   const createQueryChain = () => ({
     where: () => createQueryChain(),
     leftJoin: () => createQueryChain(),
@@ -59,7 +61,19 @@ function createStubDb() {
     }),
     query: () => Promise.resolve([]),
     transaction: async (callback: any) => {
-      console.log('🔧 Stub database transaction started');
+      console.log('🔧 Stub database transaction started with locking simulation');
+      const lockKey = 'quota_lock'; // Simple global lock for stub
+      
+      if (stubLocks.has(lockKey)) {
+        await stubLocks.get(lockKey);
+      }
+      
+      let resolveLock: () => void;
+      const lockPromise = new Promise<void>(resolve => {
+        resolveLock = resolve;
+      });
+      stubLocks.set(lockKey, lockPromise);
+      
       try {
         const result = await callback({
           select: () => ({
@@ -83,6 +97,9 @@ function createStubDb() {
       } catch (error) {
         console.error('❌ Stub database transaction failed:', error);
         throw error;
+      } finally {
+        stubLocks.delete(lockKey);
+        resolveLock!();
       }
     }
   } as any;

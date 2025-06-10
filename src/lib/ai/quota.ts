@@ -1,12 +1,6 @@
 import { db, aiConversations } from '../db';
 import { eq, and, gte, sql } from 'drizzle-orm';
-
-export const QUOTA_LIMITS = {
-  guest: 3,
-  basic: 50,
-  premium: 200,
-  admin: 999999,
-} as const;
+import { QUOTA_CONFIG, type SubscriptionTier, getQuotaLimit } from './quota-config';
 
 function startOfCurrentMonth(): Date {
   const now = new Date();
@@ -50,12 +44,14 @@ export async function atomicQuotaCheckAndInsert(
   limit: number;
   conversationId?: string;
 }> {
-  const limit = QUOTA_LIMITS[subscriptionTier as keyof typeof QUOTA_LIMITS] || 0;
+  const limit = getQuotaLimit(subscriptionTier);
   const firstOfMonth = startOfCurrentMonth();
   
   try {
     return await db.transaction(async (tx: any) => {
-      await tx.execute(sql`LOCK TABLE ai_conversations IN SHARE ROW EXCLUSIVE MODE`);
+      const lockId = hashUserId(userId);
+      console.log('🔒 Acquiring advisory lock for user', { userId, lockId });
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockId})`);
       
       const currentUsage = await tx
         .select()
@@ -111,7 +107,7 @@ export async function checkQuota(userId: string, subscriptionTier: string): Prom
   used: number;
   limit: number;
 }> {
-  const limit = QUOTA_LIMITS[subscriptionTier as keyof typeof QUOTA_LIMITS] || 0;
+  const limit = getQuotaLimit(subscriptionTier);
   
   try {
     const used = await getMonthlyUsage(userId);
@@ -128,4 +124,14 @@ export async function checkQuota(userId: string, subscriptionTier: string): Prom
       limit,
     };
   }
+}
+
+function hashUserId(userId: string): number {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    const char = userId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
 }
