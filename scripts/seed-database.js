@@ -40,7 +40,7 @@ async function seedDatabase() {
     {
       id: 'admin-user-id-12345',
       email: 'admin@aitechj.com',
-      password: 'admin123',
+      password: process.env.TEST_ADMIN_PASSWORD,
       roleId: 1, // admin role
       subscriptionTier: 'admin',
       emailVerified: true,
@@ -49,7 +49,7 @@ async function seedDatabase() {
     {
       id: 'basic-user-id-12345', 
       email: 'basic@aitechj.com',
-      password: 'basic123',
+      password: process.env.TEST_BASIC_PASSWORD,
       roleId: 2, // user role
       subscriptionTier: 'basic',
       emailVerified: true,
@@ -58,7 +58,7 @@ async function seedDatabase() {
     {
       id: 'premium-user-id-12345',
       email: 'premium@aitechj.com', 
-      password: 'premium123',
+      password: process.env.TEST_PREMIUM_PASSWORD,
       roleId: 2, // user role
       subscriptionTier: 'premium',
       emailVerified: true,
@@ -90,9 +90,9 @@ async function seedDatabase() {
   
   console.log('🎉 Database seeding completed!');
   console.log('📋 Test credentials:');
-  console.log('   Admin: admin@aitechj.com / admin123');
-  console.log('   Basic: basic@aitechj.com / basic123');
-  console.log('   Premium: premium@aitechj.com / premium123');
+  console.log('   Admin: admin@aitechj.com / [password from env]');
+  console.log('   Basic: basic@aitechj.com / [password from env]');
+  console.log('   Premium: premium@aitechj.com / [password from env]');
 }
 
 if (require.main === module) {

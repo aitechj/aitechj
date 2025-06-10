@@ -8,7 +8,7 @@ async function seedTestUsers() {
     {
       id: 'admin-user-id-12345',
       email: 'admin@aitechj.com',
-      password: 'admin123',
+      password: process.env.TEST_ADMIN_PASSWORD,
       role: 'admin',
       subscriptionTier: 'admin',
       emailVerified: true
@@ -16,7 +16,7 @@ async function seedTestUsers() {
     {
       id: 'basic-user-id-12345', 
       email: 'basic@aitechj.com',
-      password: 'basic123',
+      password: process.env.TEST_BASIC_PASSWORD,
       role: 'user',
       subscriptionTier: 'basic',
       emailVerified: true
@@ -24,7 +24,7 @@ async function seedTestUsers() {
     {
       id: 'premium-user-id-12345',
       email: 'premium@aitechj.com', 
-      password: 'premium123',
+      password: process.env.TEST_PREMIUM_PASSWORD,
       role: 'user',
       subscriptionTier: 'premium',
       emailVerified: true

@@ -52,10 +52,19 @@ function createStubDb() {
     permissions: JSON.stringify(['read'])
   });
 
+  const testAdminPassword = process.env.TEST_ADMIN_PASSWORD;
+  const testBasicPassword = process.env.TEST_BASIC_PASSWORD;
+  const testPremiumPassword = process.env.TEST_PREMIUM_PASSWORD;
+
+  if (!testAdminPassword || !testBasicPassword || !testPremiumPassword) {
+    console.warn('⚠️ Test user passwords not configured via environment variables');
+    console.warn('⚠️ Skipping test user seeding - users will need to be created via other means');
+  } else {
+
   stubStorage.users.set('admin-user-id-12345', {
     id: 'admin-user-id-12345',
     email: 'admin@aitechj.com',
-    passwordHash: bcrypt.hashSync('admin123', 12),
+    passwordHash: bcrypt.hashSync(testAdminPassword, 12),
     roleId: 1,
     subscriptionTier: 'admin',
     emailVerified: true,
@@ -63,11 +72,11 @@ function createStubDb() {
     createdAt: new Date(),
     updatedAt: new Date()
   });
-  
+
   stubStorage.users.set('basic-user-id-12345', {
     id: 'basic-user-id-12345',
     email: 'basic@aitechj.com',
-    passwordHash: bcrypt.hashSync('basic123', 12),
+    passwordHash: bcrypt.hashSync(testBasicPassword, 12),
     roleId: 2,
     subscriptionTier: 'basic',
     emailVerified: true,
@@ -75,11 +84,11 @@ function createStubDb() {
     createdAt: new Date(),
     updatedAt: new Date()
   });
-  
+
   stubStorage.users.set('premium-user-id-12345', {
     id: 'premium-user-id-12345',
     email: 'premium@aitechj.com',
-    passwordHash: bcrypt.hashSync('premium123', 12),
+    passwordHash: bcrypt.hashSync(testPremiumPassword, 12),
     roleId: 2,
     subscriptionTier: 'premium',
     emailVerified: true,
@@ -87,6 +96,7 @@ function createStubDb() {
     createdAt: new Date(),
     updatedAt: new Date()
   });
+  }
 
   console.log('🌱 Stub database pre-seeded with test users and roles');
   
