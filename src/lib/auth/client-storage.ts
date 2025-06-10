@@ -49,8 +49,8 @@ export function getAllAuthTokens(): AuthTokens {
   if (!isVercelPreview()) return {};
   
   return {
-    accessToken: getAuthToken('access'),
-    refreshToken: getAuthToken('refresh'),
-    guestToken: getAuthToken('guest'),
+    accessToken: getAuthToken('access') || undefined,
+    refreshToken: getAuthToken('refresh') || undefined,
+    guestToken: getAuthToken('guest') || undefined,
   };
 }

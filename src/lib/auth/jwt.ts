@@ -98,11 +98,24 @@ export function decodeJWT(token: string): JWTPayload | null {
   }
 }
 
-export async function getCurrentUser(): Promise<JWTPayload | null> {
+export async function getCurrentUser(request?: any): Promise<JWTPayload | null> {
   try {
-    const { cookies } = await import('next/headers');
-    const cookieStore = cookies();
-    const token = cookieStore.get('access_token')?.value || cookieStore.get('guest_token')?.value;
+    let token: string | undefined;
+    
+    if (request) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+      
+      if (!token) {
+        token = request.cookies.get('access_token')?.value || request.cookies.get('guest_token')?.value;
+      }
+    } else {
+      const { cookies } = await import('next/headers');
+      const cookieStore = cookies();
+      token = cookieStore.get('access_token')?.value || cookieStore.get('guest_token')?.value;
+    }
     
     if (!token) {
       const error = new Error('No authentication token found');

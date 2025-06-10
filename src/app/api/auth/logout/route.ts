@@ -4,7 +4,7 @@ import { revokeAllRefreshTokens } from '../../../../lib/auth/refresh-tokens';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     
     if (user) {
       await revokeAllRefreshTokens(user.userId);
