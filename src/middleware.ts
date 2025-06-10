@@ -4,12 +4,22 @@ import { verifyJWT } from './lib/auth/jwt';
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('access_token')?.value;
-  const isPreview = process.env.VERCEL_ENV === 'preview';
+  const isPreview = request.nextUrl.hostname.includes('vercel.app') || 
+                   process.env.VERCEL_ENV === 'preview' ||
+                   process.env.NODE_ENV === 'development';
 
   const protectedPaths = ['/dashboard', '/admin', '/profile'];
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   );
+
+  console.log('🔧 Middleware check:', {
+    hostname: request.nextUrl.hostname,
+    isPreview,
+    hasToken: !!token,
+    path: request.nextUrl.pathname,
+    isProtectedPath
+  });
 
   if (isProtectedPath) {
     if (!token) {
@@ -24,6 +34,7 @@ export async function middleware(request: NextRequest) {
         return response;
       }
       
+      console.log('🔧 Production mode: redirecting to login due to missing token');
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
