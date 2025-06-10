@@ -70,7 +70,12 @@ export async function POST(request: NextRequest) {
       subscriptionTier: user.subscriptionTier || 'guest',
     };
 
-    const accessToken = await signJWT(jwtPayload, '15m');
+    const accessToken = signJWT(jwtPayload, '15m');
+    console.log('🔑 Generated JWT token:', !!accessToken);
+    
+    if (!accessToken) {
+      throw new Error('Failed to generate JWT token');
+    }
     const refreshToken = await generateRefreshToken();
     await storeRefreshToken(user.id, refreshToken);
 
