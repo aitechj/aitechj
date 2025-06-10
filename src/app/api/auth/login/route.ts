@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { user, role } = userWithRole[0];
+    console.log('🔍 Found user:', { id: user.id, email: user.email, isActive: user.isActive, hasPasswordHash: !!user.passwordHash });
 
     if (!user.isActive) {
       return NextResponse.json(
@@ -85,7 +86,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('🔐 Verifying password for user:', user.email);
     const isPasswordValid = await verifyPassword(password, user.passwordHash);
+    console.log('🔐 Password verification result:', isPasswordValid);
+    
     if (!isPasswordValid) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
