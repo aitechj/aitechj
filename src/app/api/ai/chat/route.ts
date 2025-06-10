@@ -87,6 +87,48 @@ export async function POST(request: NextRequest) {
     }));
     const sanitizedContext = contextContent ? sanitizeInput(contextContent) : undefined;
 
+    const cacheKey = generateCacheKey(sanitizedMessages, sanitizedContext);
+    const cachedResponse = await getCachedResponse(cacheKey);
+    
+    if (cachedResponse) {
+      const { atomicQuotaCheckAndInsert } = await import('@/lib/ai/quota');
+      const quotaResult = await atomicQuotaCheckAndInsert(
+        user.userId,
+        user.subscriptionTier,
+        {
+          conversationId: `conv_cached_${Date.now()}_${user.userId}`,
+          messages: [...sanitizedMessages, { role: 'assistant', content: cachedResponse.content }],
+          tokensUsed: cachedResponse.tokensUsed || 0,
+          createdAt: new Date(),
+        }
+      );
+
+      if (quotaResult.quotaExceeded) {
+        console.log('❌ Quota exceeded for cached response');
+        return NextResponse.json(
+          { error: 'Monthly quota exceeded. Please upgrade your plan for more questions.' },
+          { status: 429 }
+        );
+      }
+
+      if (!quotaResult.success) {
+        console.error('❌ Failed to insert cached conversation');
+        return NextResponse.json({ 
+          ...cachedResponse, 
+          cached: true,
+          error: 'Failed to save conversation'
+        });
+      }
+
+      console.log('✅ Cached conversation logged for user:', user.userId, 'conversation ID:', quotaResult.conversationId);
+      
+      return NextResponse.json({ 
+        ...cachedResponse, 
+        cached: true,
+        quota: quotaResult.used
+      });
+    }
+
     const { getMonthlyUsage } = await import('@/lib/ai/quota');
     const usageCount = await getMonthlyUsage(user.userId);
     const limit = user.subscriptionTier === "guest" ? 3 
@@ -104,56 +146,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cacheKey = generateCacheKey(sanitizedMessages, sanitizedContext);
-    const cachedResponse = await getCachedResponse(cacheKey);
-    if (cachedResponse) {
-      try {
-        const cachedConversationResult = await db.insert(aiConversations).values({
-          userId: user.userId,
-          conversationId: `conv_cached_${Date.now()}_${user.userId}`,
-          messages: [...sanitizedMessages, { role: 'assistant', content: cachedResponse.content }],
-          tokensUsed: cachedResponse.tokensUsed || 0,
-          createdAt: new Date(),
-        }).returning({ id: aiConversations.id });
-        
-        console.log('✅ Cached conversation logged for user:', user.userId, 'conversation ID:', cachedConversationResult[0]?.id);
-      } catch (dbError) {
-        console.error('❌ Failed to insert cached conversation:', dbError);
-        console.error('❌ Cached database error details:', JSON.stringify(dbError, null, 2));
-      }
-
-      return NextResponse.json({ 
-        ...cachedResponse, 
-        cached: true,
-        quota: usageCount + 1
-      });
-    }
-
     const aiResponse = await generateAIResponse(sanitizedMessages, user.subscriptionTier, sanitizedContext);
 
-    try {
-      const conversationResult = await db.insert(aiConversations).values({
-        userId: user.userId,
+    const { atomicQuotaCheckAndInsert } = await import('@/lib/ai/quota');
+    const quotaResult = await atomicQuotaCheckAndInsert(
+      user.userId,
+      user.subscriptionTier,
+      {
         conversationId: `conv_${Date.now()}_${user.userId}`,
         messages: [...sanitizedMessages, { role: 'assistant', content: aiResponse.content }],
         tokensUsed: aiResponse.tokensUsed,
         createdAt: new Date(),
-      }).returning({ id: aiConversations.id });
-      
-      console.log('✅ Conversation logged for user:', user.userId, 'conversation ID:', conversationResult[0]?.id);
-    } catch (dbError) {
-      console.error('❌ Failed to insert conversation:', dbError);
-      console.error('❌ Database error details:', JSON.stringify(dbError, null, 2));
+      }
+    );
+
+    if (quotaResult.quotaExceeded) {
+      console.log('❌ Quota exceeded after AI response generated');
+      return NextResponse.json(
+        { error: 'Monthly quota exceeded. Please upgrade your plan for more questions.' },
+        { status: 429 }
+      );
     }
 
-    await setCachedResponse(cacheKey, aiResponse);
+    if (!quotaResult.success) {
+      console.error('❌ Failed to insert conversation');
+      await setCachedResponse(cacheKey, aiResponse);
+      return NextResponse.json({ 
+        ...aiResponse, 
+        cached: false,
+        error: 'Failed to save conversation'
+      });
+    }
 
-    const updatedQuota = await checkQuota(user.userId, user.subscriptionTier);
+    console.log('✅ Conversation logged for user:', user.userId, 'conversation ID:', quotaResult.conversationId);
+    
+    await setCachedResponse(cacheKey, aiResponse);
     
     return NextResponse.json({ 
       ...aiResponse, 
       cached: false,
-      quota: updatedQuota
+      quota: quotaResult.used
     });
 
   } catch (error) {
