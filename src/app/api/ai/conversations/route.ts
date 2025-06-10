@@ -9,9 +9,10 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     let user;
+    let guestResult;
     
     try {
-      user = await getCurrentUser();
+      user = await getCurrentUser(request);
       console.log('✅ Authenticated user found for conversations:', user?.userId);
     } catch (err: any) {
       if (err.name === "UnauthorizedError") {
@@ -24,14 +25,14 @@ export async function GET(request: NextRequest) {
           
           if (!user) {
             console.log('❌ Invalid guest token, creating new guest user');
-            const guestResult = await getOrCreateGuestUser(request);
+            guestResult = await getOrCreateGuestUser(request);
             user = guestResult.user;
           } else {
             console.log('✅ Valid guest token found for conversations:', user.userId);
           }
         } else {
           console.log('🆕 No guest token found, creating new guest user');
-          const guestResult = await getOrCreateGuestUser(request);
+          guestResult = await getOrCreateGuestUser(request);
           user = guestResult.user;
         }
       } else {
@@ -59,7 +60,25 @@ export async function GET(request: NextRequest) {
 
     console.log('📋 Found conversations for user:', user.userId, 'count:', conversations.length);
 
-    return NextResponse.json({ conversations });
+    const responseData: any = { conversations };
+    
+    if (guestResult && guestResult.isNewGuest) {
+      responseData.guestToken = guestResult.token;
+    }
+    
+    const response = NextResponse.json(responseData);
+    
+    if (guestResult && guestResult.isNewGuest) {
+      response.cookies.set('guest_token', guestResult.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60,
+        path: '/',
+      });
+    }
+    
+    return response;
 
   } catch (error) {
     console.error('❌ Conversations fetch error:', error);

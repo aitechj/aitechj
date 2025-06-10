@@ -1,5 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface QuotaData {
   used: number;
@@ -27,11 +28,16 @@ interface QuotaProviderProps {
 
 export function QuotaProvider({ children }: QuotaProviderProps) {
   const [quota, setQuota] = useState<QuotaData | null>(null);
+  const { getAuthHeaders } = useAuth();
 
   const refreshQuota = async (retryCount = 0) => {
     try {
       const threadId = localStorage.getItem('threadId');
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      const authHeaders = getAuthHeaders();
+      const headers: Record<string, string> = { 
+        'Content-Type': 'application/json',
+        ...authHeaders
+      };
       if (threadId) {
         headers['X-Thread-ID'] = threadId;
       }
@@ -47,6 +53,11 @@ export function QuotaProvider({ children }: QuotaProviderProps) {
           quota: data.quota,
           resetDate: data.resetDate
         });
+        
+        if (isVercelPreview() && data.guestToken) {
+          const { setAuthToken } = await import('@/lib/auth/client-storage');
+          setAuthToken('guest', data.guestToken);
+        }
       } else {
         throw new Error(`Quota API returned ${response.status}: ${response.statusText}`);
       }

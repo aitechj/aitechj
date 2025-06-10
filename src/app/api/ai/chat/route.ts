@@ -30,10 +30,10 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     let user;
-    let response;
+    let guestResult;
     
     try {
-      user = await getCurrentUser();
+      user = await getCurrentUser(request);
       console.log('✅ Authenticated user found for chat:', user?.userId);
     } catch (err: any) {
       if (err.name === "UnauthorizedError") {
@@ -46,14 +46,14 @@ export async function POST(request: NextRequest) {
           
           if (!user) {
             console.log('❌ Invalid guest token, creating new guest user');
-            const guestResult = await getOrCreateGuestUser(request);
+            guestResult = await getOrCreateGuestUser(request);
             user = guestResult.user;
           } else {
             console.log('✅ Valid guest token found for chat:', user.userId);
           }
         } else {
           console.log('🆕 No guest token found, creating new guest user');
-          const guestResult = await getOrCreateGuestUser(request);
+          guestResult = await getOrCreateGuestUser(request);
           user = guestResult.user;
         }
       } else {
@@ -122,12 +122,30 @@ export async function POST(request: NextRequest) {
 
       console.log('✅ Cached conversation logged for user:', user.userId, 'conversation ID:', quotaResult.conversationId);
       
-      return NextResponse.json({ 
+      const responseData: any = { 
         ...cachedResponse, 
         cached: true,
         quota: quotaResult.used,
         threadId: user.userId
-      });
+      };
+      
+      if (guestResult && guestResult.isNewGuest) {
+        responseData.guestToken = guestResult.token;
+      }
+      
+      const response = NextResponse.json(responseData);
+      
+      if (guestResult && guestResult.isNewGuest) {
+        response.cookies.set('guest_token', guestResult.token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 30 * 24 * 60 * 60,
+          path: '/',
+        });
+      }
+      
+      return response;
     }
 
 
@@ -167,12 +185,30 @@ export async function POST(request: NextRequest) {
     
     await setCachedResponse(cacheKey, aiResponse);
     
-    return NextResponse.json({ 
+    const responseData: any = { 
       ...aiResponse, 
       cached: false,
       quota: quotaResult.used,
       threadId: user.userId
-    });
+    };
+    
+    if (guestResult && guestResult.isNewGuest) {
+      responseData.guestToken = guestResult.token;
+    }
+    
+    const response = NextResponse.json(responseData);
+    
+    if (guestResult && guestResult.isNewGuest) {
+      response.cookies.set('guest_token', guestResult.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60,
+        path: '/',
+      });
+    }
+    
+    return response;
 
   } catch (error) {
     console.error('❌ AI chat error:', error);
