@@ -125,9 +125,9 @@ export default function LoginPage() {
 
         <script dangerouslySetInnerHTML={{
           __html: `
-            console.log('🔧 Setting up direct vanilla JS authentication - v2');
+            console.log('🔧 Setting up robust vanilla JS authentication - v3');
             
-            function setupDirectAuth() {
+            function setupRobustAuth() {
               const form = document.querySelector('form');
               const button = document.querySelector('button[type="submit"]');
               const emailInput = document.querySelector('input[name="email"]');
@@ -135,28 +135,25 @@ export default function LoginPage() {
               
               if (!form || !button || !emailInput || !passwordInput) {
                 console.log('⏳ Waiting for form elements...');
-                setTimeout(setupDirectAuth, 100);
+                setTimeout(setupRobustAuth, 100);
                 return;
               }
               
-              console.log('✅ Direct auth: All form elements found');
+              console.log('✅ Robust auth: All form elements found');
               
-              async function handleDirectAuth(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                console.log('🔧 Direct vanilla JS authentication triggered');
+              async function executeAuthentication() {
+                console.log('🔧 ROBUST: Authentication execution started');
                 
                 const email = emailInput.value.trim();
                 const password = passwordInput.value.trim();
                 
-                console.log('🔧 Direct auth credentials:', { 
+                console.log('🔧 ROBUST: Credentials captured:', { 
                   email: email, 
                   hasPassword: !!password 
                 });
                 
                 if (!email || !password) {
-                  console.error('❌ Direct auth: Missing credentials');
+                  console.error('❌ ROBUST: Missing credentials');
                   alert('Please enter both email and password');
                   return false;
                 }
@@ -165,7 +162,7 @@ export default function LoginPage() {
                 button.textContent = 'Signing in...';
                 
                 try {
-                  console.log('🔧 Direct auth: Making API request');
+                  console.log('🔧 ROBUST: Making API request to /api/auth/login');
                   const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 
@@ -175,17 +172,18 @@ export default function LoginPage() {
                     body: JSON.stringify({ email, password })
                   });
                   
-                  console.log('📡 Direct auth response:', {
+                  console.log('📡 ROBUST: API response received:', {
                     status: response.status,
-                    ok: response.ok
+                    ok: response.ok,
+                    statusText: response.statusText
                   });
                   
                   if (response.ok) {
                     const data = await response.json();
-                    console.log('✅ Direct auth successful:', data);
+                    console.log('✅ ROBUST: Authentication successful:', data);
                     
                     if (data.tokens) {
-                      console.log('💾 Direct auth: Storing tokens');
+                      console.log('💾 ROBUST: Storing authentication tokens');
                       if (data.tokens.accessToken) {
                         localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
                       }
@@ -194,38 +192,87 @@ export default function LoginPage() {
                       }
                     }
                     
-                    console.log('🔄 Direct auth: Redirecting to /admin');
+                    console.log('🔄 ROBUST: Redirecting to admin dashboard');
                     window.location.href = '/admin';
+                    return true;
                     
                   } else {
                     const errorText = await response.text();
-                    console.error('❌ Direct auth failed:', errorText);
+                    console.error('❌ ROBUST: Authentication failed:', errorText);
                     alert('Login failed: ' + errorText);
+                    return false;
                   }
                 } catch (error) {
-                  console.error('🔥 Direct auth error:', error);
-                  alert('Network error occurred');
+                  console.error('🔥 ROBUST: Network error:', error);
+                  alert('Network error occurred: ' + error.message);
+                  return false;
                 } finally {
                   button.disabled = false;
                   button.textContent = 'Sign in';
                 }
-                
-                return false;
               }
               
-              form.addEventListener('submit', handleDirectAuth);
-              button.addEventListener('click', handleDirectAuth);
+              function attachRobustHandlers() {
+                console.log('🔧 ROBUST: Attaching multiple event handlers');
+                
+                form.onsubmit = function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🔧 ROBUST: Form onsubmit triggered');
+                  executeAuthentication();
+                  return false;
+                };
+                
+                button.onclick = function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🔧 ROBUST: Button onclick triggered');
+                  executeAuthentication();
+                  return false;
+                };
+                
+                try {
+                  form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔧 ROBUST: Form addEventListener triggered');
+                    executeAuthentication();
+                  }, true);
+                  
+                  button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔧 ROBUST: Button addEventListener triggered');
+                    executeAuthentication();
+                  }, true);
+                } catch (err) {
+                  console.warn('⚠️ ROBUST: addEventListener failed:', err);
+                }
+                
+                const originalSubmit = form.submit;
+                form.submit = function() {
+                  console.log('🔧 ROBUST: Form.submit() override triggered');
+                  executeAuthentication();
+                };
+                
+                console.log('✅ ROBUST: All event handlers attached successfully');
+              }
               
-              console.log('✅ Direct auth handlers attached');
+              attachRobustHandlers();
+              
+              window.testAuth = executeAuthentication;
+              console.log('🔧 ROBUST: Test function available as window.testAuth()');
             }
             
             if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', setupDirectAuth);
+              document.addEventListener('DOMContentLoaded', setupRobustAuth);
             } else {
-              setupDirectAuth();
+              setupRobustAuth();
             }
             
-            setTimeout(setupDirectAuth, 1000);
+            setTimeout(setupRobustAuth, 500);
+            setTimeout(setupRobustAuth, 1000);
+            setTimeout(setupRobustAuth, 2000);
           `
         }} />
 
