@@ -67,7 +67,7 @@ export default function LoginPage() {
             Access the content management system
           </p>
         </div>
-        <form ref={formRef} className="mt-8 space-y-6" method="post" onSubmit={handleSubmit}>
+        <form ref={formRef} className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
