@@ -161,6 +161,13 @@ export default function LoginPage() {
               }
               
               console.log('🔄 Redirecting to admin dashboard from useEffect');
+              console.log('🔄 About to set window.location.href to /admin');
+              
+              setTimeout(() => {
+                console.log('🔄 Executing redirect via setTimeout');
+                window.location.href = '/admin';
+              }, 100);
+              
               window.location.href = '/admin';
               
             } else {
@@ -320,67 +327,6 @@ export default function LoginPage() {
             </p>
           </div>
         </form>
-         {/* 👇 Embed vanilla JS fallback script here */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              console.log('✅ Vanilla JS auth loaded');
-
-              function setupVanillaAuth() {
-                const form = document.querySelector('form');
-                const button = document.querySelector('button[type="submit"]');
-                
-                if (!form || !button) {
-                  console.error('❌ Form or button not found');
-                  return;
-                }
-
-                async function handleLogin(e) {
-                  e.preventDefault();
-                  console.log('📤 Sending login request');
-
-                  const formData = new FormData(form);
-                  const email = formData.get('email');
-                  const password = formData.get('password');
-
-                  button.disabled = true;
-                  button.textContent = 'Signing in...';
-
-                  try {
-                    const response = await fetch('/api/auth/login', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ email, password })
-                    });
-
-                    if (response.ok) {
-                      console.log('✅ Login success');
-                      window.location.href = '/admin';
-                    } else {
-                      const error = await response.json();
-                      alert(error.message || 'Login failed');
-                    }
-                  } catch (err) {
-                    console.error('🔥 Login error', err);
-                    alert('Network error occurred');
-                  } finally {
-                    button.disabled = false;
-                    button.textContent = 'Sign in';
-                  }
-                }
-
-                form.addEventListener('submit', handleLogin);
-                button.addEventListener('click', handleLogin);
-              }
-
-              if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', setupVanillaAuth);
-              } else {
-                setupVanillaAuth();
-              }
-            `
-          }}
-        />
 
       </div>
     </div>
