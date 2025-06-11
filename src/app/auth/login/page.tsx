@@ -242,8 +242,39 @@ export default function LoginPage() {
                       console.log('🍪 ROBUST: Tokens set as HTTP-only cookies (production mode)');
                     }
                     
-                    console.log('🔄 ROBUST: Redirecting to admin dashboard');
-                    window.location.href = '/admin';
+                    console.log('🔄 ROBUST: Executing redirect to admin dashboard');
+                    
+                    try {
+                      console.log('🔄 ROBUST: Attempting immediate redirect via location.href');
+                      window.location.href = '/admin';
+                    } catch (redirectError) {
+                      console.warn('⚠️ ROBUST: location.href failed, trying replace:', redirectError);
+                      try {
+                        window.location.replace('/admin');
+                      } catch (replaceError) {
+                        console.error('❌ ROBUST: Both redirect methods failed:', replaceError);
+                      }
+                    }
+                    
+                    setTimeout(() => {
+                      if (window.location.pathname === '/auth/login') {
+                        console.log('🔄 ROBUST: Executing delayed redirect fallback');
+                        try {
+                          window.location.replace('/admin');
+                        } catch (delayedError) {
+                          console.error('❌ ROBUST: Delayed redirect failed:', delayedError);
+                          alert('Login successful! Please navigate to /admin manually.');
+                        }
+                      }
+                    }, 1000);
+                    
+                    setTimeout(() => {
+                      if (window.location.pathname === '/auth/login') {
+                        console.log('🔄 ROBUST: Force navigation as final fallback');
+                        window.open('/admin', '_self');
+                      }
+                    }, 2000);
+                    
                     return true;
                     
                   } else {
