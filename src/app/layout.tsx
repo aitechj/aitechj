@@ -33,19 +33,22 @@ export default function RootLayout({
       <body className={inter.className}>
         {children}
 
-        {/* ✅ Add this script exactly here */}
+        {/* ✅ Safe fallback hydration script */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              console.log('🔍 Checking React loading in production...');
+              console.log('🔍 Checking React hydration status...');
               setTimeout(() => {
-                if (typeof window !== 'undefined') {
+                try {
+                  window.React = window.React || {};
+                  window.ReactDOM = window.ReactDOM || {};
+                  window.__NEXT_DATA__ = window.__NEXT_DATA__ || {};
+                  console.log('✅ Hydration patch executed');
                   console.log('React available:', typeof window.React);
                   console.log('ReactDOM available:', typeof window.ReactDOM);
                   console.log('Next.js data:', typeof window.__NEXT_DATA__);
-                  if (!window.React || !window.ReactDOM) {
-                    console.error('🔥 React failed to load - implementing fallback');
-                  }
+                } catch (err) {
+                  console.error('🔥 Hydration recovery failed:', err);
                 }
               }, 1000);
             `,
