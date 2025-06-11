@@ -44,7 +44,9 @@ export function useAuth() {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
+    console.log('🔍 useAuth.login() called with email:', email);
     try {
+      console.log('📡 Making fetch request to /api/auth/login');
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -54,22 +56,36 @@ export function useAuth() {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log('📡 Fetch response received, status:', response.status, 'ok:', response.ok);
+
       if (response.ok) {
+        console.log('✅ Response OK, parsing JSON...');
         const data = await response.json();
+        console.log('📄 Response data:', data);
+        console.log('🔍 shouldUseLocalStorage():', shouldUseLocalStorage());
+        console.log('🔍 data.tokens exists:', !!data.tokens);
+        console.log('🔍 data.user exists:', !!data.user);
         
         if (shouldUseLocalStorage() && data.tokens) {
+          console.log('💾 Storing tokens in localStorage');
           if (data.tokens.accessToken) {
             setAuthToken('access', data.tokens.accessToken);
+            console.log('💾 Stored access token');
           }
           if (data.tokens.refreshToken) {
             setAuthToken('refresh', data.tokens.refreshToken);
+            console.log('💾 Stored refresh token');
           }
+        } else {
+          console.log('⚠️ Not storing tokens - shouldUseLocalStorage:', shouldUseLocalStorage(), 'data.tokens:', !!data.tokens);
         }
         
         if (shouldUseLocalStorage() && data.guestToken) {
           setAuthToken('guest', data.guestToken);
+          console.log('💾 Stored guest token');
         }
         
+        console.log('🔄 Updating auth state...');
         setAuthState((prev: AuthState) => ({
           ...prev,
           user: data.user,
@@ -78,12 +94,16 @@ export function useAuth() {
         }));
         
         updateTokens();
+        console.log('✅ Login successful, returning success');
         return { success: true, user: data.user };
       } else {
+        console.log('❌ Response not OK, parsing error...');
         const errorData = await response.json();
+        console.log('❌ Error data:', errorData);
         return { success: false, error: errorData.error || 'Login failed' };
       }
     } catch (error) {
+      console.error('🔥 Login error:', error);
       return { success: false, error: 'Network error occurred' };
     }
   }, [updateTokens]);
