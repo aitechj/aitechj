@@ -110,6 +110,15 @@ export default function LoginPage() {
               type="submit"
               disabled={isLoading}
               className="w-full"
+              onClick={(e) => {
+                e.preventDefault();
+                console.log('🔧 Button onClick triggered - manually calling handleSubmit');
+                const syntheticEvent = {
+                  preventDefault: () => {},
+                  target: formRef.current
+                } as React.FormEvent;
+                handleSubmit(syntheticEvent);
+              }}
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
