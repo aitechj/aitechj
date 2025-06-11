@@ -188,93 +188,181 @@ export default function LoginPage() {
             </p>
           </div>
         </form>
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            console.log('🔧 Setting up vanilla JS authentication fallback');
+      </div>
+      
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          (function() {
+            console.log('🔧 Initializing vanilla JS authentication fallback');
             
-            function setupVanillaAuth() {
-              const form = document.querySelector('form');
-              const button = document.querySelector('button[type="submit"]');
+            function initVanillaAuth() {
+              console.log('🔧 Setting up vanilla auth handlers');
               
-              if (!form || !button) {
-                console.error('❌ Form or button not found for vanilla auth');
-                return;
-              }
-              
-              async function handleLogin(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🔧 Vanilla JS login triggered');
+              const checkElements = () => {
+                const form = document.querySelector('form');
+                const button = document.querySelector('button[type="submit"]');
+                const emailInput = document.querySelector('input[name="email"]');
+                const passwordInput = document.querySelector('input[name="password"]');
                 
-                const formData = new FormData(form);
-                const email = formData.get('email');
-                const password = formData.get('password');
-                
-                console.log('🔧 Form data captured:', { email, hasPassword: !!password });
-                
-                if (!email || !password) {
-                  alert('Please enter both email and password');
+                if (!form || !button || !emailInput || !passwordInput) {
+                  console.log('⏳ Waiting for form elements...');
+                  setTimeout(checkElements, 100);
                   return;
                 }
                 
-                button.disabled = true;
-                button.textContent = 'Signing in...';
+                console.log('✅ All form elements found, setting up handlers');
                 
-                try {
-                  console.log('🔧 Making fetch request to /api/auth/login');
-                  const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                
+                async function handleVanillaAuth(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                  
+                  console.log('🔧 Vanilla JS authentication triggered');
+                  
+                  const email = emailInput.value.trim();
+                  const password = passwordInput.value.trim();
+                  
+                  console.log('🔧 Credentials captured:', { 
+                    email: email, 
+                    hasPassword: !!password,
+                    emailLength: email.length,
+                    passwordLength: password.length
                   });
                   
-                  console.log('🔧 Fetch response:', response.status, response.ok);
-                  
-                  if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ Vanilla login successful:', data);
-                    
-                    if (data.tokens) {
-                      console.log('💾 Storing tokens in localStorage');
-                      if (data.tokens.accessToken) {
-                        localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
-                        console.log('💾 Access token stored');
-                      }
-                      if (data.tokens.refreshToken) {
-                        localStorage.setItem('aitechj_refresh_token', data.tokens.refreshToken);
-                        console.log('💾 Refresh token stored');
-                      }
-                    }
-                    
-                    console.log('🔄 Redirecting to /admin');
-                    window.location.href = '/admin';
-                  } else {
-                    const errorData = await response.json();
-                    console.error('❌ Login failed:', errorData);
-                    alert(errorData.error || 'Login failed');
+                  if (!email || !password) {
+                    console.error('❌ Missing credentials');
+                    alert('Please enter both email and password');
+                    return false;
                   }
-                } catch (error) {
-                  console.error('🔥 Vanilla login error:', error);
-                  alert('Network error occurred');
-                } finally {
-                  button.disabled = false;
-                  button.textContent = 'Sign in';
+                  
+                  newButton.disabled = true;
+                  newButton.textContent = 'Signing in...';
+                  
+                  try {
+                    console.log('🔧 Making authentication request');
+                    const response = await fetch('/api/auth/login', {
+                      method: 'POST',
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                      },
+                      body: JSON.stringify({ email, password })
+                    });
+                    
+                    console.log('📡 Authentication response:', {
+                      status: response.status,
+                      statusText: response.statusText,
+                      ok: response.ok,
+                      url: response.url
+                    });
+                    
+                    if (response.ok) {
+                      const data = await response.json();
+                      console.log('✅ Authentication successful:', data);
+                      
+                      if (data.tokens) {
+                        console.log('💾 Storing authentication tokens');
+                        if (data.tokens.accessToken) {
+                          localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
+                          console.log('💾 Access token stored successfully');
+                        }
+                        if (data.tokens.refreshToken) {
+                          localStorage.setItem('aitechj_refresh_token', data.tokens.refreshToken);
+                          console.log('💾 Refresh token stored successfully');
+                        }
+                        
+                        const storedAccess = localStorage.getItem('aitechj_access_token');
+                        const storedRefresh = localStorage.getItem('aitechj_refresh_token');
+                        console.log('🔍 Token storage verification:', {
+                          accessToken: !!storedAccess,
+                          refreshToken: !!storedRefresh,
+                          accessTokenLength: storedAccess ? storedAccess.length : 0
+                        });
+                      } else {
+                        console.log('⚠️ No tokens in response, checking cookies');
+                        console.log('🍪 Current cookies:', document.cookie);
+                      }
+                      
+                      console.log('🔄 Redirecting to admin dashboard');
+                      window.location.replace('/admin');
+                      
+                    } else {
+                      const errorText = await response.text();
+                      console.error('❌ Authentication failed:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        body: errorText
+                      });
+                      
+                      let errorMessage = 'Login failed';
+                      try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.error || errorMessage;
+                        console.error('❌ Parsed error:', errorData);
+                      } catch (e) {
+                        console.error('❌ Could not parse error response');
+                      }
+                      
+                      alert(errorMessage);
+                    }
+                  } catch (error) {
+                    console.error('🔥 Authentication error:', error);
+                    console.error('🔥 Error details:', {
+                      name: error.name,
+                      message: error.message,
+                      stack: error.stack
+                    });
+                    alert('Network error occurred. Please try again.');
+                  } finally {
+                    newButton.disabled = false;
+                    newButton.textContent = 'Sign in';
+                  }
+                  
+                  return false;
                 }
-              }
+                
+                newButton.addEventListener('click', handleVanillaAuth, true);
+                form.addEventListener('submit', handleVanillaAuth, true);
+                
+                console.log('✅ Vanilla JS authentication handlers attached successfully');
+                
+                emailInput.addEventListener('keydown', (e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleVanillaAuth(e);
+                  }
+                });
+                
+                passwordInput.addEventListener('keydown', (e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleVanillaAuth(e);
+                  }
+                });
+                
+                console.log('✅ Keyboard handlers attached');
+              };
               
-              form.addEventListener('submit', handleLogin);
-              button.addEventListener('click', handleLogin);
-              console.log('✅ Vanilla JS auth handlers attached');
+              checkElements();
             }
             
             if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', setupVanillaAuth);
+              document.addEventListener('DOMContentLoaded', initVanillaAuth);
+              console.log('⏳ Waiting for DOM to load');
             } else {
-              setupVanillaAuth();
+              console.log('✅ DOM already loaded, initializing immediately');
+              initVanillaAuth();
             }
-          `
-        }} />
-      </div>
+            
+            setTimeout(initVanillaAuth, 500);
+            setTimeout(initVanillaAuth, 1000);
+            
+          })();
+        `
+      }} />
     </div>
   );
 }
