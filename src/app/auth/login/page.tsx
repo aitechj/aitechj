@@ -131,7 +131,7 @@ export default function LoginPage() {
               const form = document.querySelector('form');
               const button = document.querySelector('button[type="submit"]');
               const emailInput = document.querySelector('input[name="email"]');
-              const passwordInput = document.querySelector('input[name="password"]');
+              const passwordInput = document.querySelector('input[id="password"]') || document.querySelector('input[name="password"]');
               
               if (!form || !button || !emailInput || !passwordInput) {
                 console.log('⏳ Waiting for form elements...');
