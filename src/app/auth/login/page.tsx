@@ -19,9 +19,7 @@ export default function LoginPage() {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🚀 handleSubmit called - form submission triggered');
     e.preventDefault();
-    console.log('🚀 preventDefault called, setting loading state');
     setIsLoading(true);
     setError('');
 
@@ -29,32 +27,19 @@ export default function LoginPage() {
       const formData = new FormData(e.target as HTMLFormElement);
       const formEmail = formData.get('email') as string || email;
       const formPassword = formData.get('password') as string || password;
-      
-      console.log('🚀 Form values - React state:', { email, password });
-      console.log('🚀 Form values - FormData:', { formEmail, formPassword });
-      console.log('🚀 About to call login function with:', formEmail);
-      
       const result = await login(formEmail, formPassword);
-      console.log('🚀 Login function returned:', result);
-      
+
       if (result.success) {
-        console.log('🚀 Login successful, redirecting to /admin');
         router.push('/admin');
       } else {
-        console.log('🚀 Login failed:', result.error);
         setError(result.error || 'Login failed');
       }
     } catch (err) {
-      console.error('🚀 Login error caught:', err);
       setError('Network error occurred');
     } finally {
-      console.log('🚀 Setting loading to false');
       setIsLoading(false);
     }
   };
-
-
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -124,240 +109,65 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            console.log('🔧 Setting up robust vanilla JS authentication - v3');
-            
-            function setupRobustAuth() {
-              const form = document.querySelector('form');
-              const button = document.querySelector('button[type="submit"]');
-              const emailInput = document.querySelector('input[name="email"]') || document.querySelector('input[type="email"]');
-              const passwordInput = document.querySelector('input[name="password"]') || document.querySelector('input[type="password"]');
-              
-              if (!form || !button || !emailInput || !passwordInput) {
-                console.log('⏳ Waiting for form elements...');
-                setTimeout(setupRobustAuth, 100);
-                return;
-              }
-              
-              console.log('✅ Robust auth: All form elements found');
-              
-              async function executeAuthentication() {
-                console.log('🔧 ROBUST: Authentication execution started');
-                
-                const emailMethods = [
-                  () => emailInput.value,
-                  () => emailInput.getAttribute('value'),
-                  () => document.querySelector('input[name="email"]')?.value,
-                  () => document.querySelector('input[type="email"]')?.value,
-                  () => {
-                    const formData = new FormData(form);
-                    return formData.get('email');
-                  }
-                ];
-                
-                const passwordMethods = [
-                  () => passwordInput.value,
-                  () => passwordInput.getAttribute('value'),
-                  () => document.querySelector('input[name="password"]')?.value,
-                  () => document.querySelector('input[type="password"]')?.value,
-                  () => {
-                    const formData = new FormData(form);
-                    return formData.get('password');
-                  }
-                ];
-                
-                let email = '';
-                let password = '';
-                
-                for (const method of emailMethods) {
-                  try {
-                    const value = method();
-                    if (value && value.trim()) {
-                      email = value.trim();
-                      break;
-                    }
-                  } catch (e) {
-                    console.log('🔧 ROBUST: Email method failed:', e.message);
-                  }
-                }
-                
-                for (const method of passwordMethods) {
-                  try {
-                    const value = method();
-                    if (value && value.trim()) {
-                      password = value.trim();
-                      break;
-                    }
-                  } catch (e) {
-                    console.log('🔧 ROBUST: Password method failed:', e.message);
-                  }
-                }
-                
-                console.log('🔧 ROBUST: Credentials captured:', { 
-                  email: email, 
-                  hasPassword: !!password,
-                  emailLength: email.length,
-                  passwordLength: password.length
-                });
-                
-                if (!email || !password) {
-                  console.error('❌ ROBUST: Missing credentials');
-                  alert('Please enter both email and password');
-                  return false;
-                }
-                
-                button.disabled = true;
-                button.textContent = 'Signing in...';
-                
-                try {
-                  console.log('🔧 ROBUST: Making API request to /api/auth/login');
-                  const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 
-                      'Content-Type': 'application/json',
-                      'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                  });
-                  
-                  console.log('📡 ROBUST: API response received:', {
-                    status: response.status,
-                    ok: response.ok,
-                    statusText: response.statusText
-                  });
-                  
-                  if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ ROBUST: Authentication successful:', data);
-                    
-                    if (data.tokens) {
-                      console.log('💾 ROBUST: Storing authentication tokens in localStorage');
-                      if (data.tokens.accessToken) {
-                        localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
-                      }
-                      if (data.tokens.refreshToken) {
-                        localStorage.setItem('aitechj_refresh_token', data.tokens.refreshToken);
-                      }
-                    } else {
-                      console.log('🍪 ROBUST: Tokens set as HTTP-only cookies (production mode)');
-                    }
-                    
-                    console.log('🔄 ROBUST: Executing redirect to admin dashboard');
-                    
-                    try {
-                      console.log('🔄 ROBUST: Attempting immediate redirect via location.href');
-                      window.location.href = '/admin';
-                    } catch (redirectError) {
-                      console.warn('⚠️ ROBUST: location.href failed, trying replace:', redirectError);
-                      try {
-                        window.location.replace('/admin');
-                      } catch (replaceError) {
-                        console.error('❌ ROBUST: Both redirect methods failed:', replaceError);
-                      }
-                    }
-                    
-                    setTimeout(() => {
-                      if (window.location.pathname === '/auth/login') {
-                        console.log('🔄 ROBUST: Executing delayed redirect fallback');
-                        try {
-                          window.location.replace('/admin');
-                        } catch (delayedError) {
-                          console.error('❌ ROBUST: Delayed redirect failed:', delayedError);
-                          alert('Login successful! Please navigate to /admin manually.');
-                        }
-                      }
-                    }, 1000);
-                    
-                    setTimeout(() => {
-                      if (window.location.pathname === '/auth/login') {
-                        console.log('🔄 ROBUST: Force navigation as final fallback');
-                        window.open('/admin', '_self');
-                      }
-                    }, 2000);
-                    
-                    return true;
-                    
-                  } else {
-                    const errorText = await response.text();
-                    console.error('❌ ROBUST: Authentication failed:', errorText);
-                    alert('Login failed: ' + errorText);
-                    return false;
-                  }
-                } catch (error) {
-                  console.error('🔥 ROBUST: Network error:', error);
-                  alert('Network error occurred: ' + error.message);
-                  return false;
-                } finally {
-                  button.disabled = false;
-                  button.textContent = 'Sign in';
-                }
-              }
-              
-              function attachRobustHandlers() {
-                console.log('🔧 ROBUST: Attaching multiple event handlers');
-                
-                form.onsubmit = function(e) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('🔧 ROBUST: Form onsubmit triggered');
-                  executeAuthentication();
-                  return false;
-                };
-                
-                button.onclick = function(e) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('🔧 ROBUST: Button onclick triggered');
-                  executeAuthentication();
-                  return false;
-                };
-                
-                try {
-                  form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🔧 ROBUST: Form addEventListener triggered');
-                    executeAuthentication();
-                  }, true);
-                  
-                  button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🔧 ROBUST: Button addEventListener triggered');
-                    executeAuthentication();
-                  }, true);
-                } catch (err) {
-                  console.warn('⚠️ ROBUST: addEventListener failed:', err);
-                }
-                
-                const originalSubmit = form.submit;
-                form.submit = function() {
-                  console.log('🔧 ROBUST: Form.submit() override triggered');
-                  executeAuthentication();
-                };
-                
-                console.log('✅ ROBUST: All event handlers attached successfully');
-              }
-              
-              attachRobustHandlers();
-              
-              window.testAuth = executeAuthentication;
-              console.log('🔧 ROBUST: Test function available as window.testAuth()');
-            }
-            
-            if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', setupRobustAuth);
-            } else {
-              setupRobustAuth();
-            }
-            
-            setTimeout(setupRobustAuth, 500);
-            setTimeout(setupRobustAuth, 1000);
-            setTimeout(setupRobustAuth, 2000);
-          `
-        }} />
+        {/* Inject vanilla JS fallback */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function setup() {
+  const form = document.querySelector('form');
+  const button = document.querySelector('button[type="submit"]');
+  const emailInput = document.querySelector('input[name="email"]');
+  const passwordInput = document.querySelector('input[name="password"]');
+  if (!form || !button || !emailInput || !passwordInput) return;
 
+  async function executeAuthentication() {
+    console.log('🧠 Running robust fallback authentication');
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    if (!email || !password) return alert('Email and password are required.');
+
+    button.disabled = true;
+    button.textContent = 'Signing in...';
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (response.ok) {
+        console.log('✅ Login success');
+        window.location.href = '/admin';
+      } else {
+        const errText = await response.text();
+        alert('Login failed: ' + errText);
+      }
+    } catch (e) {
+      console.error('🔥 Network error', e);
+      alert('Network error occurred');
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Sign in';
+    }
+  }
+
+  button.addEventListener('click', (e) => {
+    e.preventDefault();
+    executeAuthentication();
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    executeAuthentication();
+  });
+})();
+            `
+          }}
+        />
       </div>
     </div>
   );
