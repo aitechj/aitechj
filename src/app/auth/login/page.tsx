@@ -53,70 +53,184 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    const setupDOMEventListeners = () => {
-      console.log('🔧 Setting up pure DOM event listeners (bypassing React)');
-      
-      const button = document.querySelector('button[type="submit"]');
-      const form = document.querySelector('form');
-      
-      if (button && form) {
-        console.log('✅ Found button and form elements');
+    console.log('🔧 Setting up comprehensive vanilla JS authentication fallback');
+    
+    const setupVanillaAuth = () => {
+      const checkElements = () => {
+        const form = document.querySelector('form');
+        const button = document.querySelector('button[type="submit"]');
+        const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
+        const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement;
         
-        const handleDOMClick = async (e: Event) => {
+        if (!form || !button || !emailInput || !passwordInput) {
+          console.log('⏳ Waiting for form elements in useEffect...');
+          setTimeout(checkElements, 100);
+          return;
+        }
+        
+        console.log('✅ All form elements found in useEffect, setting up handlers');
+        
+        const newButton = button.cloneNode(true) as HTMLButtonElement;
+        button.parentNode?.replaceChild(newButton, button);
+        
+        const handleVanillaAuth = async (e: Event) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('🔧 DOM click handler triggered - bypassing React entirely');
+          e.stopImmediatePropagation();
           
+          console.log('🔧 Vanilla JS authentication triggered from useEffect');
+          
+          const email = emailInput.value.trim();
+          const password = passwordInput.value.trim();
+          
+          console.log('🔧 Credentials captured from useEffect:', { 
+            email: email, 
+            hasPassword: !!password,
+            emailLength: email.length,
+            passwordLength: password.length
+          });
+          
+          if (!email || !password) {
+            console.error('❌ Missing credentials in useEffect handler');
+            setError('Please enter both email and password');
+            return false;
+          }
+          
+          newButton.disabled = true;
+          newButton.textContent = 'Signing in...';
           setIsLoading(true);
           setError('');
           
           try {
-            const formData = new FormData(form as HTMLFormElement);
-            const formEmail = formData.get('email') as string;
-            const formPassword = formData.get('password') as string;
+            console.log('🔧 Making authentication request from useEffect');
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({ email, password })
+            });
             
-            console.log('🔧 DOM FormData captured:', { formEmail, formPassword });
+            console.log('📡 Authentication response from useEffect:', {
+              status: response.status,
+              statusText: response.statusText,
+              ok: response.ok,
+              url: response.url
+            });
             
-            if (!formEmail || !formPassword) {
-              console.log('❌ Missing credentials from DOM FormData');
-              setError('Please enter both email and password');
-              return;
-            }
-            
-            console.log('🔧 Calling login with DOM-captured credentials');
-            const result = await login(formEmail, formPassword);
-            console.log('🔧 DOM login result:', result);
-            
-            if (result.success) {
-              console.log('🔧 DOM login successful, redirecting to /admin');
+            if (response.ok) {
+              const data = await response.json();
+              console.log('✅ Authentication successful from useEffect:', data);
+              
+              if (data.tokens) {
+                console.log('💾 Storing authentication tokens from useEffect');
+                if (data.tokens.accessToken) {
+                  localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
+                  console.log('💾 Access token stored successfully from useEffect');
+                }
+                if (data.tokens.refreshToken) {
+                  localStorage.setItem('aitechj_refresh_token', data.tokens.refreshToken);
+                  console.log('💾 Refresh token stored successfully from useEffect');
+                }
+                
+                const storedAccess = localStorage.getItem('aitechj_access_token');
+                const storedRefresh = localStorage.getItem('aitechj_refresh_token');
+                console.log('🔍 Token storage verification from useEffect:', {
+                  accessToken: !!storedAccess,
+                  refreshToken: !!storedRefresh,
+                  accessTokenLength: storedAccess ? storedAccess.length : 0
+                });
+              } else {
+                console.log('⚠️ No tokens in response from useEffect, checking cookies');
+                console.log('🍪 Current cookies from useEffect:', document.cookie);
+              }
+              
+              console.log('🔄 Redirecting to admin dashboard from useEffect');
               router.push('/admin');
+              setTimeout(() => {
+                window.location.replace('/admin');
+              }, 1000);
+              
             } else {
-              console.log('🔧 DOM login failed:', result.error);
-              setError(result.error || 'Login failed');
+              const errorText = await response.text();
+              console.error('❌ Authentication failed from useEffect:', {
+                status: response.status,
+                statusText: response.statusText,
+                body: errorText
+              });
+              
+              let errorMessage = 'Login failed';
+              try {
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.error || errorMessage;
+                console.error('❌ Parsed error from useEffect:', errorData);
+              } catch (e) {
+                console.error('❌ Could not parse error response from useEffect');
+              }
+              
+              setError(errorMessage);
             }
-          } catch (err) {
-            console.error('🔧 DOM login error:', err);
-            setError('Network error occurred');
+          } catch (error) {
+            console.error('🔥 Authentication error from useEffect:', error);
+            console.error('🔥 Error details from useEffect:', {
+              name: (error as Error).name,
+              message: (error as Error).message,
+              stack: (error as Error).stack
+            });
+            setError('Network error occurred. Please try again.');
           } finally {
+            newButton.disabled = false;
+            newButton.textContent = 'Sign in';
             setIsLoading(false);
           }
+          
+          return false;
         };
         
-        button.addEventListener('click', handleDOMClick);
-        console.log('✅ DOM click listener attached to button');
+        newButton.addEventListener('click', handleVanillaAuth, true);
+        form.addEventListener('submit', handleVanillaAuth, true);
+        
+        console.log('✅ Vanilla JS authentication handlers attached from useEffect');
+        
+        emailInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleVanillaAuth(e);
+          }
+        });
+        
+        passwordInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleVanillaAuth(e);
+          }
+        });
+        
+        console.log('✅ Keyboard handlers attached from useEffect');
         
         return () => {
-          button.removeEventListener('click', handleDOMClick);
-          console.log('🧹 DOM click listener removed');
+          newButton.removeEventListener('click', handleVanillaAuth, true);
+          form.removeEventListener('submit', handleVanillaAuth, true);
+          emailInput.removeEventListener('keydown', handleVanillaAuth);
+          passwordInput.removeEventListener('keydown', handleVanillaAuth);
+          console.log('🧹 All event listeners removed from useEffect');
         };
-      } else {
-        console.log('❌ Button or form not found for DOM listeners');
-      }
+      };
+      
+      return checkElements();
     };
     
-    const cleanup = setupDOMEventListeners();
+    const cleanup = setupVanillaAuth();
     
-    return cleanup;
+    const timeout1 = setTimeout(setupVanillaAuth, 500);
+    const timeout2 = setTimeout(setupVanillaAuth, 1000);
+    
+    return () => {
+      if (cleanup) cleanup();
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+    };
   }, [login, router, setIsLoading, setError]);
 
 
@@ -189,180 +303,6 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
-      
-      <script dangerouslySetInnerHTML={{
-        __html: `
-          (function() {
-            console.log('🔧 Initializing vanilla JS authentication fallback');
-            
-            function initVanillaAuth() {
-              console.log('🔧 Setting up vanilla auth handlers');
-              
-              const checkElements = () => {
-                const form = document.querySelector('form');
-                const button = document.querySelector('button[type="submit"]');
-                const emailInput = document.querySelector('input[name="email"]');
-                const passwordInput = document.querySelector('input[name="password"]');
-                
-                if (!form || !button || !emailInput || !passwordInput) {
-                  console.log('⏳ Waiting for form elements...');
-                  setTimeout(checkElements, 100);
-                  return;
-                }
-                
-                console.log('✅ All form elements found, setting up handlers');
-                
-                const newButton = button.cloneNode(true);
-                button.parentNode.replaceChild(newButton, button);
-                
-                async function handleVanillaAuth(e) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.stopImmediatePropagation();
-                  
-                  console.log('🔧 Vanilla JS authentication triggered');
-                  
-                  const email = emailInput.value.trim();
-                  const password = passwordInput.value.trim();
-                  
-                  console.log('🔧 Credentials captured:', { 
-                    email: email, 
-                    hasPassword: !!password,
-                    emailLength: email.length,
-                    passwordLength: password.length
-                  });
-                  
-                  if (!email || !password) {
-                    console.error('❌ Missing credentials');
-                    alert('Please enter both email and password');
-                    return false;
-                  }
-                  
-                  newButton.disabled = true;
-                  newButton.textContent = 'Signing in...';
-                  
-                  try {
-                    console.log('🔧 Making authentication request');
-                    const response = await fetch('/api/auth/login', {
-                      method: 'POST',
-                      headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                      },
-                      body: JSON.stringify({ email, password })
-                    });
-                    
-                    console.log('📡 Authentication response:', {
-                      status: response.status,
-                      statusText: response.statusText,
-                      ok: response.ok,
-                      url: response.url
-                    });
-                    
-                    if (response.ok) {
-                      const data = await response.json();
-                      console.log('✅ Authentication successful:', data);
-                      
-                      if (data.tokens) {
-                        console.log('💾 Storing authentication tokens');
-                        if (data.tokens.accessToken) {
-                          localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
-                          console.log('💾 Access token stored successfully');
-                        }
-                        if (data.tokens.refreshToken) {
-                          localStorage.setItem('aitechj_refresh_token', data.tokens.refreshToken);
-                          console.log('💾 Refresh token stored successfully');
-                        }
-                        
-                        const storedAccess = localStorage.getItem('aitechj_access_token');
-                        const storedRefresh = localStorage.getItem('aitechj_refresh_token');
-                        console.log('🔍 Token storage verification:', {
-                          accessToken: !!storedAccess,
-                          refreshToken: !!storedRefresh,
-                          accessTokenLength: storedAccess ? storedAccess.length : 0
-                        });
-                      } else {
-                        console.log('⚠️ No tokens in response, checking cookies');
-                        console.log('🍪 Current cookies:', document.cookie);
-                      }
-                      
-                      console.log('🔄 Redirecting to admin dashboard');
-                      window.location.replace('/admin');
-                      
-                    } else {
-                      const errorText = await response.text();
-                      console.error('❌ Authentication failed:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        body: errorText
-                      });
-                      
-                      let errorMessage = 'Login failed';
-                      try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.error || errorMessage;
-                        console.error('❌ Parsed error:', errorData);
-                      } catch (e) {
-                        console.error('❌ Could not parse error response');
-                      }
-                      
-                      alert(errorMessage);
-                    }
-                  } catch (error) {
-                    console.error('🔥 Authentication error:', error);
-                    console.error('🔥 Error details:', {
-                      name: error.name,
-                      message: error.message,
-                      stack: error.stack
-                    });
-                    alert('Network error occurred. Please try again.');
-                  } finally {
-                    newButton.disabled = false;
-                    newButton.textContent = 'Sign in';
-                  }
-                  
-                  return false;
-                }
-                
-                newButton.addEventListener('click', handleVanillaAuth, true);
-                form.addEventListener('submit', handleVanillaAuth, true);
-                
-                console.log('✅ Vanilla JS authentication handlers attached successfully');
-                
-                emailInput.addEventListener('keydown', (e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleVanillaAuth(e);
-                  }
-                });
-                
-                passwordInput.addEventListener('keydown', (e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleVanillaAuth(e);
-                  }
-                });
-                
-                console.log('✅ Keyboard handlers attached');
-              };
-              
-              checkElements();
-            }
-            
-            if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', initVanillaAuth);
-              console.log('⏳ Waiting for DOM to load');
-            } else {
-              console.log('✅ DOM already loaded, initializing immediately');
-              initVanillaAuth();
-            }
-            
-            setTimeout(initVanillaAuth, 500);
-            setTimeout(initVanillaAuth, 1000);
-            
-          })();
-        `
-      }} />
     </div>
   );
 }
