@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AITechJ - Three Phases Development Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        nav {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        nav a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .phase {
+            background: white;
+            margin-bottom: 3rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .phase-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+        }
+        
+        .phase-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .phase-description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .phase-content {
+            padding: 2rem;
+        }
+        
+        .component {
+            margin-bottom: 2rem;
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+        }
+        
+        .component-title {
+            font-size: 1.3rem;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .component-description {
+            margin-bottom: 1rem;
+            color: #666;
+        }
+        
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .filename {
+            background: #667eea;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border-radius: 5px 5px 0 0;
+            margin-bottom: 0;
+        }
+        
+        .auth-flow {
+            background: #f8f9ff;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            font-weight: bold;
+        }
+        
+        .troubleshooting {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .troubleshooting h3 {
+            color: #856404;
+            margin-bottom: 1rem;
+        }
+        
+        .issue-analysis {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .issue-analysis h3 {
+            color: #0c5460;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .phase-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AITechJ Development Documentation</h1>
+            <p class="subtitle">Comprehensive Guide to Three-Phase Implementation</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#phase1">Phase 1: Authentication</a></li>
+                <li><a href="#phase2">Phase 2: AI Integration</a></li>
+                <li><a href="#phase3">Phase 3: Deployment</a></li>
+                <li><a href="#auth-analysis">Authentication Analysis</a></li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+            </ul>
+        </nav>
+
+        <section id="overview" class="phase">
+            <div class="phase-header">
+                <h2 class="phase-title">Project Overview</h2>
+                <p class="phase-description">AI-Powered Technical Learning Platform with Three-Phase Development</p>
+            </div>
+            <div class="phase-content">
+                <p>AITechJ is developed in three distinct phases, each building upon the previous to create a comprehensive AI-powered learning platform:</p>
+                <ul style="margin: 1rem 0; padding-left: 2rem;">
+                    <li><strong>Phase 1:</strong> Database & User Management system with authentication</li>
+                    <li><strong>Phase 2:</strong> AI Integration and Core Features (inferred from codebase)</li>
+                    <li><strong>Phase 3:</strong> Deployment and Production Configuration (Vercel/Supabase)</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="phase1" class="phase">
+            <div class="phase-header">
+                <h2 class="phase-title">Phase 1: Database & User Management with Authentication</h2>
+                <p class="phase-description">Complete authentication system with JWT tokens, user roles, and protected routes</p>
+            </div>
+            <div class="phase-content">
+                
+                <div class="component">
+                    <h3 class="component-title">Login Page Component</h3>
+                    <p class="component-description">React component for user authentication with email/password form</p>
+                    <div class="filename">src/app/auth/login/page.tsx</div>
+                    <div class="code-block">'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        router.push('/admin');
+      } else {
+        setError(data.error || 'Login failed');
+      }
+    } catch (error) {
+      setError('Network error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    &lt;div className="min-h-screen flex items-center justify-center bg-gray-50"&gt;
+      &lt;div className="max-w-md w-full space-y-8"&gt;
+        &lt;div&gt;
+          &lt;h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900"&gt;
+            Sign in to AITechJ Admin
+          &lt;/h2&gt;
+          &lt;p className="mt-2 text-center text-sm text-gray-600"&gt;
+            Access the content management system
+          &lt;/p&gt;
+        &lt;/div&gt;
+        &lt;form className="mt-8 space-y-6" onSubmit={handleSubmit}&gt;
+          &lt;div&gt;
+            &lt;label htmlFor="email" className="sr-only"&gt;Email address&lt;/label&gt;
+            &lt;input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) =&gt; setEmail(e.target.value)}
+              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter your email"
+            /&gt;
+          &lt;/div&gt;
+          &lt;div&gt;
+            &lt;label htmlFor="password" className="sr-only"&gt;Password&lt;/label&gt;
+            &lt;input
+              id="password"
+              name="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) =&gt; setPassword(e.target.value)}
+              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter your password"
+            /&gt;
+          &lt;/div&gt;
+          {error && (
+            &lt;div className="text-red-600 text-sm text-center"&gt;{error}&lt;/div&gt;
+          )}
+          &lt;div&gt;
+            &lt;button
+              type="submit"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            &gt;
+              {isLoading ? 'Signing in...' : 'Sign in'}
+            &lt;/button&gt;
+          &lt;/div&gt;
+          &lt;div className="text-center text-sm text-gray-600"&gt;
+            Demo credentials: admin@aitechj.com / admin123
+          &lt;/div&gt;
+        &lt;/form&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}</div>
+                </div>
+
+                <div class="component">
+                    <h3 class="component-title">Login API Route</h3>
+                    <p class="component-description">Server-side authentication endpoint with JWT token generation</p>
+                    <div class="filename">src/app/api/auth/login/route.ts</div>
+                    <div class="code-block">// Complete authentication API with JWT token generation
+// Password verification, user validation, and cookie management
+// Supports multiple user roles and subscription tiers
+// See source code for full implementation</div>
+                </div>
+
+                <div class="component">
+                    <h3 class="component-title">JWT Authentication Utilities</h3>
+                    <p class="component-description">Custom JWT implementation for token generation and verification</p>
+                    <div class="filename">src/lib/auth/jwt.ts</div>
+                    <div class="code-block">// Custom JWT implementation with base64 encoding
+// Token signing and verification functions
+// Support for different expiration times (15m, 24h, 30d)
+// See source code for full implementation</div>
+                </div>
+
+                <div class="component">
+                    <h3 class="component-title">Middleware Protection</h3>
+                    <p class="component-description">Route protection middleware for authenticated pages</p>
+                    <div class="filename">src/middleware.ts</div>
+                    <div class="code-block">// Next.js middleware for route protection
+// Protects /dashboard, /admin, /profile routes
+// JWT token verification and security headers
+// Automatic redirect to login for unauthenticated users
+// See source code for full implementation</div>
+                </div>
+
+                <div class="component">
+                    <h3 class="component-title">Database Schema & Stub Implementation</h3>
+                    <p class="component-description">Database schema definition and stub database for development</p>
+                    <div class="filename">src/lib/db/index.ts</div>
+                    <div class="code-block">// Drizzle ORM database configuration
+// Stub database for development with pre-seeded test users
+// Support for PostgreSQL and development fallback
+// User roles: admin, user, guest with different permissions
+// See source code for full implementation</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="phase2" class="phase">
+            <div class="phase-header">
+                <h2 class="phase-title">Phase 2: AI Integration and Core Features</h2>
+                <p class="phase-description">AI-powered chat functionality, topic management, and user interface components</p>
+            </div>
+            <div class="phase-content">
+                
+                <div class="component">
+                    <h3 class="component-title">AI Chat Interface</h3>
+                    <p class="component-description">React component for AI-powered conversations with OpenAI integration</p>
+                    <div class="filename">src/components/ai/ChatInterface.tsx</div>
+                    <div class="code-block">// React chat interface with message history
+// OpenAI GPT-3.5-turbo integration
+// Real-time conversation flow
+// Guest user support with token management
+// See source code for full implementation</div>
+                </div>
+
+                <div class="component">
+                    <h3 class="component-title">AI Chat API Route</h3>
+                    <p class="component-description">Server-side OpenAI integration for chat functionality</p>
+                    <div class="filename">src/app/api/ai/chat/route.ts</div>
+                    <div class="code-block">// OpenAI API integration for chat responses
+// User authentication and guest user handling
+// Message processing and response generation
+// Token usage tracking and limits
+// See source code for full implementation</div>
+                </div>
+
+                <div class="component">
+                    <h3 class="component-title">Topic Management System</h3>
+                    <p class="component-description">Database schema and API for managing learning topics</p>
+                    <div class="filename">src/lib/db/schema.ts</div>
+                    <div class="code-block">// Database schema for topics, sections, and content
+// User progress tracking and learning paths
+// Difficulty levels and prerequisites
+// SEO metadata and content organization
+// See source code for full implementation</div>
+                </div>
+
+                <div class="component">
+                    <h3 class="component-title">Admin Dashboard</h3>
+                    <p class="component-description">Protected admin interface for content management</p>
+                    <div class="filename">src/app/admin/page.tsx</div>
+                    <div class="code-block">// Admin dashboard for topic management
+// CSRF protection and secure form handling
+// Content creation and editing interface
+// User role-based access control
+// See source code for full implementation</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="phase3" class="phase">
+            <div class="phase-header">
+                <h2 class="phase-title">Phase 3: Deployment and Production Configuration</h2>
+                <p class="phase-description">Vercel deployment, Supabase integration, and production environment setup</p>
+            </div>
+            <div class="phase-content">
+                
+                <div class="component">
+                    <h3 class="component-title">Vercel Deployment Configuration</h3>
+                    <p class="component-description">Deployment settings and build configuration for Vercel</p>
+                    <div class="filename">vercel.json</div>
+                    <div class="code-block">{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "env": {
+    "NODE_ENV": "production"
+  }
+}</div>
+                </div>
+
+                <div class="component">
+                    <h3 class="component-title">Environment Configuration</h3>
+                    <p class="component-description">Production environment variables and Supabase setup</p>
+                    <div class="filename">.env.example</div>
+                    <div class="code-block"># Phase 3: Production Database (Supabase)
+DATABASE_URL=postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres
+USE_STUB_DB=false
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-change-in-production-min-32-chars
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://[project].supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+# Production APIs
+OPENAI_API_KEY=sk-your-openai-api-key
+RESEND_API_KEY=your-resend-api-key
+STRIPE_SECRET_KEY=sk_live_your_stripe_secret_key</div>
+                </div>
+
+                <div class="component">
+                    <h3 class="component-title">GitHub Actions Workflow</h3>
+                    <p class="component-description">CI/CD pipeline for automated testing and deployment</p>
+                    <div class="filename">.github/workflows/deploy.yml</div>
+                    <div class="code-block"># Automated deployment workflow
+# Build verification and testing
+# Environment-specific deployments
+# Integration with Vercel and Supabase
+# See repository for full workflow configuration</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="auth-analysis" class="issue-analysis">
+            <h3>Authentication Flow Analysis</h3>
+            
+            <div class="auth-flow">
+                <h4>Current Working Authentication Flow</h4>
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div>User visits /auth/login page</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div>User enters credentials (admin@aitechj.com / admin123)</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div>Form submits to /api/auth/login</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <div>Server validates credentials against stub database</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">5</div>
+                    <div>JWT tokens generated (15min access, 7day refresh)</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">6</div>
+                    <div>HTTP-only cookies set for security</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">7</div>
+                    <div>Client redirects to /admin dashboard</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">8</div>
+                    <div>Middleware protects /admin route</div>
+                </div>
+            </div>
+
+            <p><strong>Status:</strong> Authentication flow works correctly in local development environment.</p>
+            
+            <h4>Potential Issues in Production</h4>
+            <ul style="margin: 1rem 0; padding-left: 2rem;">
+                <li><strong>Environment Variables:</strong> JWT_SECRET or DATABASE_URL not properly configured</li>
+                <li><strong>Database Connection:</strong> USE_STUB_DB=true in production instead of real database</li>
+                <li><strong>Cookie Settings:</strong> Secure flag issues in HTTPS vs HTTP environments</li>
+                <li><strong>CORS Configuration:</strong> Cross-origin issues in deployed environment</li>
+                <li><strong>Build-time Issues:</strong> Missing dependencies or configuration in production build</li>
+            </ul>
+        </section>
+
+        <section id="troubleshooting" class="troubleshooting">
+            <h3>Troubleshooting Guide</h3>
+            
+            <h4>Common Issues & Solutions</h4>
+            <ul style="margin: 1rem 0; padding-left: 2rem;">
+                <li><strong>Login works locally but fails in production:</strong> Check environment variables and database connection</li>
+                <li><strong>Redirect not working:</strong> Verify middleware configuration and protected routes</li>
+                <li><strong>JWT token issues:</strong> Ensure JWT_SECRET is properly set in production</li>
+                <li><strong>Database connection errors:</strong> Switch from USE_STUB_DB=true to actual database</li>
+                <li><strong>CORS issues:</strong> Configure proper domain settings in Vercel</li>
+                <li><strong>Cookie not set:</strong> Check secure flag settings for HTTPS environments</li>
+            </ul>
+
+            <h4>Test Credentials</h4>
+            <ul style="margin: 1rem 0; padding-left: 2rem;">
+                <li>Admin: admin@aitechj.com / admin123</li>
+                <li>Basic: basic@aitechj.com / basic123</li>
+                <li>Premium: premium@aitechj.com / premium123</li>
+            </ul>
+
+            <h4>Debugging Steps</h4>
+            <ol style="margin: 1rem 0; padding-left: 2rem;">
+                <li>Check browser network tab for API response status</li>
+                <li>Verify environment variables in deployment settings</li>
+                <li>Check server logs for authentication errors</li>
+                <li>Test with different browsers and clear cookies</li>
+                <li>Verify database connectivity and user data</li>
+            </ol>
+        </section>
+
+        <footer style="text-align: center; padding: 2rem; color: #666; border-top: 1px solid #eee; margin-top: 3rem;">
+            <p>AITechJ Development Documentation - Generated on June 11, 2025</p>
+            <p>Three-Phase Implementation: Authentication → AI Integration → Production Deployment</p>
+        </footer>
+    </div>
+</body>
+</html>
