@@ -16,21 +16,29 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🚀 handleSubmit called - form submission triggered');
     e.preventDefault();
+    console.log('🚀 preventDefault called, setting loading state');
     setIsLoading(true);
     setError('');
 
     try {
+      console.log('🚀 About to call login function with:', email);
       const result = await login(email, password);
+      console.log('🚀 Login function returned:', result);
       
       if (result.success) {
+        console.log('🚀 Login successful, redirecting to /admin');
         router.push('/admin');
       } else {
+        console.log('🚀 Login failed:', result.error);
         setError(result.error || 'Login failed');
       }
     } catch (err) {
+      console.error('🚀 Login error caught:', err);
       setError('Network error occurred');
     } finally {
+      console.log('🚀 Setting loading to false');
       setIsLoading(false);
     }
   };
