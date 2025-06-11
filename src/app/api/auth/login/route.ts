@@ -3,6 +3,7 @@ import { db, users, userRoles } from '../../../../lib/db';
 import { verifyPassword } from '../../../../lib/auth/password';
 import { signJWT, type CustomJWTPayload } from '../../../../lib/auth/jwt';
 import { generateRefreshToken, storeRefreshToken, revokeAllRefreshTokens } from '../../../../lib/auth/refresh-tokens';
+import { shouldUseLocalStorage } from '../../../../lib/auth/environment';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
       },
     };
     
-    if (process.env.NODE_ENV !== 'production' || (request.headers.get('host') && request.headers.get('host')!.includes('.vercel.app'))) {
+    if (shouldUseLocalStorage()) {
       responseData.tokens = {
         accessToken: accessToken,
         refreshToken: refreshToken,
