@@ -231,13 +231,15 @@ export default function LoginPage() {
                     console.log('✅ ROBUST: Authentication successful:', data);
                     
                     if (data.tokens) {
-                      console.log('💾 ROBUST: Storing authentication tokens');
+                      console.log('💾 ROBUST: Storing authentication tokens in localStorage');
                       if (data.tokens.accessToken) {
                         localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
                       }
                       if (data.tokens.refreshToken) {
                         localStorage.setItem('aitechj_refresh_token', data.tokens.refreshToken);
                       }
+                    } else {
+                      console.log('🍪 ROBUST: Tokens set as HTTP-only cookies (production mode)');
                     }
                     
                     console.log('🔄 ROBUST: Redirecting to admin dashboard');
