@@ -70,8 +70,12 @@ export default function LoginPage() {
         
         console.log('✅ All form elements found in useEffect, setting up handlers');
         
-        const newButton = button.cloneNode(true) as HTMLButtonElement;
-        button.parentNode?.replaceChild(newButton, button);
+        const existingHandlers = (button as any)._vanillaAuthHandlers;
+        if (existingHandlers) {
+          button.removeEventListener('click', existingHandlers.click, true);
+          form.removeEventListener('submit', existingHandlers.submit, true);
+          console.log('🧹 Removed existing handlers');
+        }
         
         const handleVanillaAuth = async (e: Event) => {
           e.preventDefault();
@@ -79,6 +83,7 @@ export default function LoginPage() {
           e.stopImmediatePropagation();
           
           console.log('🔧 Vanilla JS authentication triggered from useEffect');
+          console.log('🔧 Event type:', e.type, 'Target:', e.target);
           
           const email = emailInput.value.trim();
           const password = passwordInput.value.trim();
@@ -104,8 +109,8 @@ export default function LoginPage() {
             return false;
           }
           
-          newButton.disabled = true;
-          newButton.textContent = 'Signing in...';
+          (button as HTMLButtonElement).disabled = true;
+          (button as HTMLButtonElement).textContent = 'Signing in...';
           
           const existingError = document.querySelector('.auth-error');
           if (existingError) existingError.remove();
@@ -192,39 +197,41 @@ export default function LoginPage() {
             errorDiv.innerHTML = '<div class="text-sm text-red-700">Network error occurred. Please try again.</div>';
             form.appendChild(errorDiv);
           } finally {
-            newButton.disabled = false;
-            newButton.textContent = 'Sign in';
+            (button as HTMLButtonElement).disabled = false;
+            (button as HTMLButtonElement).textContent = 'Sign in';
           }
           
           return false;
         };
         
-        newButton.addEventListener('click', handleVanillaAuth, true);
+        (button as any)._vanillaAuthHandlers = {
+          click: handleVanillaAuth,
+          submit: handleVanillaAuth
+        };
+        
+        button.addEventListener('click', handleVanillaAuth, true);
         form.addEventListener('submit', handleVanillaAuth, true);
         
         console.log('✅ Vanilla JS authentication handlers attached from useEffect');
         
-        emailInput.addEventListener('keydown', (e) => {
+        const handleKeyDown = (e: KeyboardEvent) => {
           if (e.key === 'Enter') {
             e.preventDefault();
             handleVanillaAuth(e);
           }
-        });
+        };
         
-        passwordInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            handleVanillaAuth(e);
-          }
-        });
+        emailInput.addEventListener('keydown', handleKeyDown);
+        passwordInput.addEventListener('keydown', handleKeyDown);
         
         console.log('✅ Keyboard handlers attached from useEffect');
         
         return () => {
-          newButton.removeEventListener('click', handleVanillaAuth, true);
+          button.removeEventListener('click', handleVanillaAuth, true);
           form.removeEventListener('submit', handleVanillaAuth, true);
-          emailInput.removeEventListener('keydown', handleVanillaAuth);
-          passwordInput.removeEventListener('keydown', handleVanillaAuth);
+          emailInput.removeEventListener('keydown', handleKeyDown);
+          passwordInput.removeEventListener('keydown', handleKeyDown);
+          delete (button as any)._vanillaAuthHandlers;
           console.log('🧹 All event listeners removed from useEffect');
         };
       };
