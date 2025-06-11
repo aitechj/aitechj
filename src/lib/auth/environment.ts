@@ -4,7 +4,7 @@ export function isVercelPreview(): boolean {
 }
 
 export function shouldUseLocalStorage(): boolean {
-  return isVercelPreview();
+  return typeof window !== 'undefined';
 }
 
 export function getAuthStorageKey(tokenType: 'access' | 'refresh' | 'guest'): string {

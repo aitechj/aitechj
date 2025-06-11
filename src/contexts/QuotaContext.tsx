@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { isVercelPreview } from '@/lib/auth/environment';
+import { shouldUseLocalStorage } from '@/lib/auth/environment';
 
 interface QuotaData {
   used: number;
@@ -55,7 +55,7 @@ export function QuotaProvider({ children }: QuotaProviderProps) {
           resetDate: data.resetDate
         });
         
-        if (isVercelPreview() && data.guestToken) {
+        if (shouldUseLocalStorage() && data.guestToken) {
           const { setAuthToken } = await import('@/lib/auth/client-storage');
           setAuthToken('guest', data.guestToken);
         }
