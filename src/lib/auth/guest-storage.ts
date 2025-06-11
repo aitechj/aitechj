@@ -1,7 +1,7 @@
-import { isVercelPreview, getAuthStorageKey } from './environment';
+import { shouldUseLocalStorage, getAuthStorageKey } from './environment';
 
 export function setGuestToken(token: string): void {
-  if (!isVercelPreview()) return;
+  if (!shouldUseLocalStorage()) return;
   
   try {
     localStorage.setItem(getAuthStorageKey('guest'), token);
@@ -11,7 +11,7 @@ export function setGuestToken(token: string): void {
 }
 
 export function getGuestToken(): string | null {
-  if (!isVercelPreview()) return null;
+  if (!shouldUseLocalStorage()) return null;
   
   try {
     return localStorage.getItem(getAuthStorageKey('guest'));
@@ -22,7 +22,7 @@ export function getGuestToken(): string | null {
 }
 
 export function removeGuestToken(): void {
-  if (!isVercelPreview()) return;
+  if (!shouldUseLocalStorage()) return;
   
   try {
     localStorage.removeItem(getAuthStorageKey('guest'));

@@ -1,4 +1,4 @@
-import { isVercelPreview, getAuthStorageKey } from './environment';
+import { shouldUseLocalStorage, getAuthStorageKey } from './environment';
 
 export interface AuthTokens {
   accessToken?: string;
@@ -7,7 +7,7 @@ export interface AuthTokens {
 }
 
 export function setAuthToken(tokenType: 'access' | 'refresh' | 'guest', token: string): void {
-  if (!isVercelPreview()) return;
+  if (!shouldUseLocalStorage()) return;
   
   try {
     localStorage.setItem(getAuthStorageKey(tokenType), token);
@@ -17,7 +17,7 @@ export function setAuthToken(tokenType: 'access' | 'refresh' | 'guest', token: s
 }
 
 export function getAuthToken(tokenType: 'access' | 'refresh' | 'guest'): string | null {
-  if (!isVercelPreview()) return null;
+  if (!shouldUseLocalStorage()) return null;
   
   try {
     return localStorage.getItem(getAuthStorageKey(tokenType));
@@ -28,7 +28,7 @@ export function getAuthToken(tokenType: 'access' | 'refresh' | 'guest'): string 
 }
 
 export function removeAuthToken(tokenType: 'access' | 'refresh' | 'guest'): void {
-  if (!isVercelPreview()) return;
+  if (!shouldUseLocalStorage()) return;
   
   try {
     localStorage.removeItem(getAuthStorageKey(tokenType));
@@ -38,7 +38,7 @@ export function removeAuthToken(tokenType: 'access' | 'refresh' | 'guest'): void
 }
 
 export function clearAllAuthTokens(): void {
-  if (!isVercelPreview()) return;
+  if (!shouldUseLocalStorage()) return;
   
   removeAuthToken('access');
   removeAuthToken('refresh');
@@ -46,7 +46,7 @@ export function clearAllAuthTokens(): void {
 }
 
 export function getAllAuthTokens(): AuthTokens {
-  if (!isVercelPreview()) return {};
+  if (!shouldUseLocalStorage()) return {};
   
   return {
     accessToken: getAuthToken('access') || undefined,
