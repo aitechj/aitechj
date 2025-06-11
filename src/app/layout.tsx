@@ -30,7 +30,24 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {children}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            console.log('🔍 Checking React loading in production...');
+            setTimeout(() => {
+              if (typeof window !== 'undefined') {
+                console.log('React available:', typeof window.React);
+                console.log('ReactDOM available:', typeof window.ReactDOM);
+                console.log('Next.js data:', typeof window.__NEXT_DATA__);
+                if (!window.React || !window.ReactDOM) {
+                  console.error('🔥 React failed to load - implementing fallback');
+                }
+              }
+            }, 1000);
+          `
+        }} />
+      </body>
     </html>
   )
 }

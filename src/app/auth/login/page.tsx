@@ -188,6 +188,92 @@ export default function LoginPage() {
             </p>
           </div>
         </form>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            console.log('🔧 Setting up vanilla JS authentication fallback');
+            
+            function setupVanillaAuth() {
+              const form = document.querySelector('form');
+              const button = document.querySelector('button[type="submit"]');
+              
+              if (!form || !button) {
+                console.error('❌ Form or button not found for vanilla auth');
+                return;
+              }
+              
+              async function handleLogin(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔧 Vanilla JS login triggered');
+                
+                const formData = new FormData(form);
+                const email = formData.get('email');
+                const password = formData.get('password');
+                
+                console.log('🔧 Form data captured:', { email, hasPassword: !!password });
+                
+                if (!email || !password) {
+                  alert('Please enter both email and password');
+                  return;
+                }
+                
+                button.disabled = true;
+                button.textContent = 'Signing in...';
+                
+                try {
+                  console.log('🔧 Making fetch request to /api/auth/login');
+                  const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                  });
+                  
+                  console.log('🔧 Fetch response:', response.status, response.ok);
+                  
+                  if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Vanilla login successful:', data);
+                    
+                    if (data.tokens) {
+                      console.log('💾 Storing tokens in localStorage');
+                      if (data.tokens.accessToken) {
+                        localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
+                        console.log('💾 Access token stored');
+                      }
+                      if (data.tokens.refreshToken) {
+                        localStorage.setItem('aitechj_refresh_token', data.tokens.refreshToken);
+                        console.log('💾 Refresh token stored');
+                      }
+                    }
+                    
+                    console.log('🔄 Redirecting to /admin');
+                    window.location.href = '/admin';
+                  } else {
+                    const errorData = await response.json();
+                    console.error('❌ Login failed:', errorData);
+                    alert(errorData.error || 'Login failed');
+                  }
+                } catch (error) {
+                  console.error('🔥 Vanilla login error:', error);
+                  alert('Network error occurred');
+                } finally {
+                  button.disabled = false;
+                  button.textContent = 'Sign in';
+                }
+              }
+              
+              form.addEventListener('submit', handleLogin);
+              button.addEventListener('click', handleLogin);
+              console.log('✅ Vanilla JS auth handlers attached');
+            }
+            
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', setupVanillaAuth);
+            } else {
+              setupVanillaAuth();
+            }
+          `
+        }} />
       </div>
     </div>
   );

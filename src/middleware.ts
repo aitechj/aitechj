@@ -3,7 +3,14 @@ import type { NextRequest } from 'next/server';
 import { verifyJWT } from './lib/auth/jwt';
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get('access_token')?.value;
+  let token = request.cookies.get('access_token')?.value;
+  
+  if (!token) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
 
   const protectedPaths = ['/dashboard', '/admin', '/profile'];
   const isProtectedPath = protectedPaths.some(path => 
