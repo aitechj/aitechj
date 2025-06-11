@@ -61,10 +61,14 @@ export default function LoginPage() {
       
       const handleDirectClick = (e: Event) => {
         e.preventDefault();
-        console.log('🔧 Direct button click detected - triggering form submission');
+        console.log('🔧 Direct button click detected - calling handleSubmit directly');
         
-        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-        form.dispatchEvent(submitEvent);
+        const syntheticEvent = {
+          preventDefault: () => {},
+          target: form
+        } as unknown as React.FormEvent;
+        
+        handleSubmit(syntheticEvent);
       };
       
       button.addEventListener('click', handleDirectClick);
@@ -73,7 +77,7 @@ export default function LoginPage() {
         button.removeEventListener('click', handleDirectClick);
       };
     }
-  }, []);
+  }, [handleSubmit]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
