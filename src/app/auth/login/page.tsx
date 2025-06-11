@@ -23,8 +23,15 @@ export default function LoginPage() {
     setError('');
 
     try {
-      console.log('🚀 About to call login function with:', email);
-      const result = await login(email, password);
+      const formData = new FormData(e.target as HTMLFormElement);
+      const formEmail = formData.get('email') as string || email;
+      const formPassword = formData.get('password') as string || password;
+      
+      console.log('🚀 Form values - React state:', { email, password });
+      console.log('🚀 Form values - FormData:', { formEmail, formPassword });
+      console.log('🚀 About to call login function with:', formEmail);
+      
+      const result = await login(formEmail, formPassword);
       console.log('🚀 Login function returned:', result);
       
       if (result.success) {
