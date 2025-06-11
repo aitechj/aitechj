@@ -130,8 +130,8 @@ export default function LoginPage() {
             function setupRobustAuth() {
               const form = document.querySelector('form');
               const button = document.querySelector('button[type="submit"]');
-              const emailInput = document.querySelector('input[name="email"]');
-              const passwordInput = document.querySelector('input[id="password"]') || document.querySelector('input[name="password"]');
+              const emailInput = document.querySelector('input[name="email"]') || document.querySelector('input[type="email"]');
+              const passwordInput = document.querySelector('input[name="password"]') || document.querySelector('input[type="password"]');
               
               if (!form || !button || !emailInput || !passwordInput) {
                 console.log('⏳ Waiting for form elements...');
@@ -144,8 +144,8 @@ export default function LoginPage() {
               async function executeAuthentication() {
                 console.log('🔧 ROBUST: Authentication execution started');
                 
-                const email = emailInput.value.trim();
-                const password = passwordInput.value.trim();
+                const email = (emailInput.value || emailInput.getAttribute('value') || '').trim();
+                const password = (passwordInput.value || passwordInput.getAttribute('value') || '').trim();
                 
                 console.log('🔧 ROBUST: Credentials captured:', { 
                   email: email, 
