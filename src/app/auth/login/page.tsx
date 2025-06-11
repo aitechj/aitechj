@@ -125,7 +125,7 @@ export default function LoginPage() {
 
         <script dangerouslySetInnerHTML={{
           __html: `
-            console.log('🔧 Setting up direct vanilla JS authentication');
+            console.log('🔧 Setting up direct vanilla JS authentication - v2');
             
             function setupDirectAuth() {
               const form = document.querySelector('form');
