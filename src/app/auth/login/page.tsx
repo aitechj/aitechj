@@ -328,6 +328,118 @@ export default function LoginPage() {
           </div>
         </form>
 
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            console.log('🔧 Setting up direct vanilla JS authentication');
+            
+            function setupDirectAuth() {
+              const form = document.querySelector('form');
+              const button = document.querySelector('button[type="submit"]');
+              const emailInput = document.querySelector('input[name="email"]');
+              const passwordInput = document.querySelector('input[name="password"]');
+              
+              if (!form || !button || !emailInput || !passwordInput) {
+                console.log('⏳ Waiting for form elements...');
+                setTimeout(setupDirectAuth, 100);
+                return;
+              }
+              
+              console.log('✅ Direct auth: All form elements found');
+              
+              async function handleDirectAuth(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('🔧 Direct vanilla JS authentication triggered');
+                
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+                
+                console.log('🔧 Direct auth credentials:', { 
+                  email: email, 
+                  hasPassword: !!password 
+                });
+                
+                if (!email || !password) {
+                  console.error('❌ Direct auth: Missing credentials');
+                  alert('Please enter both email and password');
+                  return false;
+                }
+                
+                button.disabled = true;
+                button.textContent = 'Signing in...';
+                
+                try {
+                  console.log('🔧 Direct auth: Making API request');
+                  const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                  });
+                  
+                  console.log('📡 Direct auth response:', {
+                    status: response.status,
+                    ok: response.ok
+                  });
+                  
+                  if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Direct auth successful:', data);
+                    
+                    if (data.tokens) {
+                      console.log('💾 Direct auth: Storing tokens');
+                      if (data.tokens.accessToken) {
+                        localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
+                      }
+                      if (data.tokens.refreshToken) {
+                        localStorage.setItem('aitechj_refresh_token', data.tokens.refreshToken);
+                      }
+                    }
+                    
+                    console.log('🔄 Direct auth: Redirecting to /admin');
+                    window.location.href = '/admin';
+                    
+                  } else {
+                    const errorText = await response.text();
+                    console.error('❌ Direct auth failed:', errorText);
+                    alert('Login failed: ' + errorText);
+                  }
+                } catch (error) {
+                  console.error('🔥 Direct auth error:', error);
+                  alert('Network error occurred');
+                } finally {
+                  button.disabled = false;
+                  button.textContent = 'Sign in';
+                }
+                
+                return false;
+              }
+              
+              const newButton = button.cloneNode(true);
+              button.parentNode.replaceChild(newButton, button);
+              
+              const newForm = form.cloneNode(true);
+              form.parentNode.replaceChild(newForm, form);
+              
+              newForm.addEventListener('submit', handleDirectAuth);
+              newButton.addEventListener('click', handleDirectAuth);
+              
+              console.log('✅ Direct auth handlers attached');
+            }
+            
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', setupDirectAuth);
+            } else {
+              setupDirectAuth();
+            }
+            
+            setTimeout(setupDirectAuth, 1000);
+          `
+        }} />
+
       </div>
     </div>
   );
