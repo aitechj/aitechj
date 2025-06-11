@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
@@ -14,6 +14,8 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const { login } = useAuth();
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     console.log('🚀 handleSubmit called - form submission triggered');
@@ -50,6 +52,29 @@ export default function LoginPage() {
     }
   };
 
+  useEffect(() => {
+    const button = buttonRef.current;
+    const form = formRef.current;
+    
+    if (button && form) {
+      console.log('🔧 Setting up direct event listeners as hydration fallback');
+      
+      const handleDirectClick = (e: Event) => {
+        e.preventDefault();
+        console.log('🔧 Direct button click detected - triggering form submission');
+        
+        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+        form.dispatchEvent(submitEvent);
+      };
+      
+      button.addEventListener('click', handleDirectClick);
+      
+      return () => {
+        button.removeEventListener('click', handleDirectClick);
+      };
+    }
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -61,7 +86,7 @@ export default function LoginPage() {
             Access the content management system
           </p>
         </div>
-        <form className="mt-8 space-y-6" method="post" onSubmit={handleSubmit}>
+        <form ref={formRef} className="mt-8 space-y-6" method="post" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -102,6 +127,7 @@ export default function LoginPage() {
 
           <div>
             <Button
+              ref={buttonRef}
               type="submit"
               disabled={isLoading}
               className="w-full"
