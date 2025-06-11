@@ -52,6 +52,73 @@ export default function LoginPage() {
     }
   };
 
+  useEffect(() => {
+    const setupDOMEventListeners = () => {
+      console.log('🔧 Setting up pure DOM event listeners (bypassing React)');
+      
+      const button = document.querySelector('button[type="submit"]');
+      const form = document.querySelector('form');
+      
+      if (button && form) {
+        console.log('✅ Found button and form elements');
+        
+        const handleDOMClick = async (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('🔧 DOM click handler triggered - bypassing React entirely');
+          
+          setIsLoading(true);
+          setError('');
+          
+          try {
+            const formData = new FormData(form as HTMLFormElement);
+            const formEmail = formData.get('email') as string;
+            const formPassword = formData.get('password') as string;
+            
+            console.log('🔧 DOM FormData captured:', { formEmail, formPassword });
+            
+            if (!formEmail || !formPassword) {
+              console.log('❌ Missing credentials from DOM FormData');
+              setError('Please enter both email and password');
+              return;
+            }
+            
+            console.log('🔧 Calling login with DOM-captured credentials');
+            const result = await login(formEmail, formPassword);
+            console.log('🔧 DOM login result:', result);
+            
+            if (result.success) {
+              console.log('🔧 DOM login successful, redirecting to /admin');
+              router.push('/admin');
+            } else {
+              console.log('🔧 DOM login failed:', result.error);
+              setError(result.error || 'Login failed');
+            }
+          } catch (err) {
+            console.error('🔧 DOM login error:', err);
+            setError('Network error occurred');
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        
+        button.addEventListener('click', handleDOMClick);
+        console.log('✅ DOM click listener attached to button');
+        
+        return () => {
+          button.removeEventListener('click', handleDOMClick);
+          console.log('🧹 DOM click listener removed');
+        };
+      } else {
+        console.log('❌ Button or form not found for DOM listeners');
+      }
+    };
+    
+    const cleanup = setupDOMEventListeners();
+    
+    return cleanup;
+  }, [login, router, setIsLoading, setError]);
+
 
 
   return (
@@ -110,15 +177,6 @@ export default function LoginPage() {
               type="submit"
               disabled={isLoading}
               className="w-full"
-              onClick={(e) => {
-                e.preventDefault();
-                console.log('🔧 Button onClick triggered - manually calling handleSubmit');
-                const syntheticEvent = {
-                  preventDefault: () => {},
-                  target: formRef.current
-                } as React.FormEvent;
-                handleSubmit(syntheticEvent);
-              }}
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
