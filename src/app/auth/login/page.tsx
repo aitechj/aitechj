@@ -418,14 +418,8 @@ export default function LoginPage() {
                 return false;
               }
               
-              const newButton = button.cloneNode(true);
-              button.parentNode.replaceChild(newButton, button);
-              
-              const newForm = form.cloneNode(true);
-              form.parentNode.replaceChild(newForm, form);
-              
-              newForm.addEventListener('submit', handleDirectAuth);
-              newButton.addEventListener('click', handleDirectAuth);
+              form.addEventListener('submit', handleDirectAuth);
+              button.addEventListener('click', handleDirectAuth);
               
               console.log('✅ Direct auth handlers attached');
             }
