@@ -52,32 +52,7 @@ export default function LoginPage() {
     }
   };
 
-  useEffect(() => {
-    const button = buttonRef.current;
-    const form = formRef.current;
-    
-    if (button && form) {
-      console.log('🔧 Setting up direct event listeners as hydration fallback');
-      
-      const handleDirectClick = (e: Event) => {
-        e.preventDefault();
-        console.log('🔧 Direct button click detected - calling handleSubmit directly');
-        
-        const syntheticEvent = {
-          preventDefault: () => {},
-          target: form
-        } as unknown as React.FormEvent;
-        
-        handleSubmit(syntheticEvent);
-      };
-      
-      button.addEventListener('click', handleDirectClick);
-      
-      return () => {
-        button.removeEventListener('click', handleDirectClick);
-      };
-    }
-  }, [handleSubmit]);
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
