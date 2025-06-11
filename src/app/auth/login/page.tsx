@@ -144,12 +144,60 @@ export default function LoginPage() {
               async function executeAuthentication() {
                 console.log('🔧 ROBUST: Authentication execution started');
                 
-                const email = (emailInput.value || emailInput.getAttribute('value') || '').trim();
-                const password = (passwordInput.value || passwordInput.getAttribute('value') || '').trim();
+                const emailMethods = [
+                  () => emailInput.value,
+                  () => emailInput.getAttribute('value'),
+                  () => document.querySelector('input[name="email"]')?.value,
+                  () => document.querySelector('input[type="email"]')?.value,
+                  () => {
+                    const formData = new FormData(form);
+                    return formData.get('email');
+                  }
+                ];
+                
+                const passwordMethods = [
+                  () => passwordInput.value,
+                  () => passwordInput.getAttribute('value'),
+                  () => document.querySelector('input[name="password"]')?.value,
+                  () => document.querySelector('input[type="password"]')?.value,
+                  () => {
+                    const formData = new FormData(form);
+                    return formData.get('password');
+                  }
+                ];
+                
+                let email = '';
+                let password = '';
+                
+                for (const method of emailMethods) {
+                  try {
+                    const value = method();
+                    if (value && value.trim()) {
+                      email = value.trim();
+                      break;
+                    }
+                  } catch (e) {
+                    console.log('🔧 ROBUST: Email method failed:', e.message);
+                  }
+                }
+                
+                for (const method of passwordMethods) {
+                  try {
+                    const value = method();
+                    if (value && value.trim()) {
+                      password = value.trim();
+                      break;
+                    }
+                  } catch (e) {
+                    console.log('🔧 ROBUST: Password method failed:', e.message);
+                  }
+                }
                 
                 console.log('🔧 ROBUST: Credentials captured:', { 
                   email: email, 
-                  hasPassword: !!password 
+                  hasPassword: !!password,
+                  emailLength: email.length,
+                  passwordLength: password.length
                 });
                 
                 if (!email || !password) {
