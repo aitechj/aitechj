@@ -53,71 +53,203 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    const setupDOMEventListeners = () => {
-      console.log('🔧 Setting up pure DOM event listeners (bypassing React)');
-      
-      const button = document.querySelector('button[type="submit"]');
-      const form = document.querySelector('form');
-      
-      if (button && form) {
-        console.log('✅ Found button and form elements');
+    console.log('🔧 Setting up comprehensive vanilla JS authentication fallback');
+    
+    const setupVanillaAuth = () => {
+      const checkElements = () => {
+        const form = document.querySelector('form');
+        const button = document.querySelector('button[type="submit"]');
+        const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
+        const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement;
         
-        const handleDOMClick = async (e: Event) => {
+        if (!form || !button || !emailInput || !passwordInput) {
+          console.log('⏳ Waiting for form elements in useEffect...');
+          setTimeout(checkElements, 100);
+          return;
+        }
+        
+        console.log('✅ All form elements found in useEffect, setting up handlers');
+        
+        const existingHandlers = (button as any)._vanillaAuthHandlers;
+        if (existingHandlers) {
+          button.removeEventListener('click', existingHandlers.click, true);
+          form.removeEventListener('submit', existingHandlers.submit, true);
+          console.log('🧹 Removed existing handlers');
+        }
+        
+        const handleVanillaAuth = async (e: Event) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('🔧 DOM click handler triggered - bypassing React entirely');
+          e.stopImmediatePropagation();
           
-          setIsLoading(true);
-          setError('');
+          console.log('🔧 Vanilla JS authentication triggered from useEffect');
+          console.log('🔧 Event type:', e.type, 'Target:', e.target);
+          
+          const email = emailInput.value.trim();
+          const password = passwordInput.value.trim();
+          
+          console.log('🔧 Credentials captured from useEffect:', { 
+            email: email, 
+            hasPassword: !!password,
+            emailLength: email.length,
+            passwordLength: password.length
+          });
+          
+          if (!email || !password) {
+            console.error('❌ Missing credentials in useEffect handler');
+            
+            const existingError = document.querySelector('.auth-error');
+            if (existingError) existingError.remove();
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'auth-error rounded-md bg-red-50 p-4 mt-4';
+            errorDiv.innerHTML = '<div class="text-sm text-red-700">Please enter both email and password</div>';
+            form.appendChild(errorDiv);
+            
+            return false;
+          }
+          
+          (button as HTMLButtonElement).disabled = true;
+          (button as HTMLButtonElement).textContent = 'Signing in...';
+          
+          const existingError = document.querySelector('.auth-error');
+          if (existingError) existingError.remove();
           
           try {
-            const formData = new FormData(form as HTMLFormElement);
-            const formEmail = formData.get('email') as string;
-            const formPassword = formData.get('password') as string;
+            console.log('🔧 Making authentication request from useEffect');
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({ email, password })
+            });
             
-            console.log('🔧 DOM FormData captured:', { formEmail, formPassword });
+            console.log('📡 Authentication response from useEffect:', {
+              status: response.status,
+              statusText: response.statusText,
+              ok: response.ok,
+              url: response.url
+            });
             
-            if (!formEmail || !formPassword) {
-              console.log('❌ Missing credentials from DOM FormData');
-              setError('Please enter both email and password');
-              return;
-            }
-            
-            console.log('🔧 Calling login with DOM-captured credentials');
-            const result = await login(formEmail, formPassword);
-            console.log('🔧 DOM login result:', result);
-            
-            if (result.success) {
-              console.log('🔧 DOM login successful, redirecting to /admin');
-              router.push('/admin');
+            if (response.ok) {
+              const data = await response.json();
+              console.log('✅ Authentication successful from useEffect:', data);
+              
+              if (data.tokens) {
+                console.log('💾 Storing authentication tokens from useEffect');
+                if (data.tokens.accessToken) {
+                  localStorage.setItem('aitechj_access_token', data.tokens.accessToken);
+                  console.log('💾 Access token stored successfully from useEffect');
+                }
+                if (data.tokens.refreshToken) {
+                  localStorage.setItem('aitechj_refresh_token', data.tokens.refreshToken);
+                  console.log('💾 Refresh token stored successfully from useEffect');
+                }
+                
+                const storedAccess = localStorage.getItem('aitechj_access_token');
+                const storedRefresh = localStorage.getItem('aitechj_refresh_token');
+                console.log('🔍 Token storage verification from useEffect:', {
+                  accessToken: !!storedAccess,
+                  refreshToken: !!storedRefresh,
+                  accessTokenLength: storedAccess ? storedAccess.length : 0
+                });
+              } else {
+                console.log('⚠️ No tokens in response from useEffect, checking cookies');
+                console.log('🍪 Current cookies from useEffect:', document.cookie);
+              }
+              
+              console.log('🔄 Redirecting to admin dashboard from useEffect');
+              window.location.href = '/admin';
+              
             } else {
-              console.log('🔧 DOM login failed:', result.error);
-              setError(result.error || 'Login failed');
+              const errorText = await response.text();
+              console.error('❌ Authentication failed from useEffect:', {
+                status: response.status,
+                statusText: response.statusText,
+                body: errorText
+              });
+              
+              let errorMessage = 'Login failed';
+              try {
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.error || errorMessage;
+                console.error('❌ Parsed error from useEffect:', errorData);
+              } catch (e) {
+                console.error('❌ Could not parse error response from useEffect');
+              }
+              
+              const errorDiv = document.createElement('div');
+              errorDiv.className = 'auth-error rounded-md bg-red-50 p-4 mt-4';
+              errorDiv.innerHTML = `<div class="text-sm text-red-700">${errorMessage}</div>`;
+              form.appendChild(errorDiv);
             }
-          } catch (err) {
-            console.error('🔧 DOM login error:', err);
-            setError('Network error occurred');
+          } catch (error) {
+            console.error('🔥 Authentication error from useEffect:', error);
+            console.error('🔥 Error details from useEffect:', {
+              name: (error as Error).name,
+              message: (error as Error).message,
+              stack: (error as Error).stack
+            });
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'auth-error rounded-md bg-red-50 p-4 mt-4';
+            errorDiv.innerHTML = '<div class="text-sm text-red-700">Network error occurred. Please try again.</div>';
+            form.appendChild(errorDiv);
           } finally {
-            setIsLoading(false);
+            (button as HTMLButtonElement).disabled = false;
+            (button as HTMLButtonElement).textContent = 'Sign in';
+          }
+          
+          return false;
+        };
+        
+        (button as any)._vanillaAuthHandlers = {
+          click: handleVanillaAuth,
+          submit: handleVanillaAuth
+        };
+        
+        button.addEventListener('click', handleVanillaAuth, true);
+        form.addEventListener('submit', handleVanillaAuth, true);
+        
+        console.log('✅ Vanilla JS authentication handlers attached from useEffect');
+        
+        const handleKeyDown = (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleVanillaAuth(e);
           }
         };
         
-        button.addEventListener('click', handleDOMClick);
-        console.log('✅ DOM click listener attached to button');
+        emailInput.addEventListener('keydown', handleKeyDown);
+        passwordInput.addEventListener('keydown', handleKeyDown);
+        
+        console.log('✅ Keyboard handlers attached from useEffect');
         
         return () => {
-          button.removeEventListener('click', handleDOMClick);
-          console.log('🧹 DOM click listener removed');
+          button.removeEventListener('click', handleVanillaAuth, true);
+          form.removeEventListener('submit', handleVanillaAuth, true);
+          emailInput.removeEventListener('keydown', handleKeyDown);
+          passwordInput.removeEventListener('keydown', handleKeyDown);
+          delete (button as any)._vanillaAuthHandlers;
+          console.log('🧹 All event listeners removed from useEffect');
         };
-      } else {
-        console.log('❌ Button or form not found for DOM listeners');
-      }
+      };
+      
+      return checkElements();
     };
     
-    const cleanup = setupDOMEventListeners();
+    const cleanup = setupVanillaAuth();
     
-    return cleanup;
-  }, [login, router, setIsLoading, setError]);
+    const timeout1 = setTimeout(setupVanillaAuth, 500);
+    const timeout2 = setTimeout(setupVanillaAuth, 1000);
+    
+    return () => {
+      if (cleanup) cleanup();
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+    };
+  }, []); // No React dependencies - pure vanilla JS
 
 
 
