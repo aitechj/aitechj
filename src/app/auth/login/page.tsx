@@ -92,14 +92,23 @@ export default function LoginPage() {
           
           if (!email || !password) {
             console.error('❌ Missing credentials in useEffect handler');
-            setError('Please enter both email and password');
+            
+            const existingError = document.querySelector('.auth-error');
+            if (existingError) existingError.remove();
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'auth-error rounded-md bg-red-50 p-4 mt-4';
+            errorDiv.innerHTML = '<div class="text-sm text-red-700">Please enter both email and password</div>';
+            form.appendChild(errorDiv);
+            
             return false;
           }
           
           newButton.disabled = true;
           newButton.textContent = 'Signing in...';
-          setIsLoading(true);
-          setError('');
+          
+          const existingError = document.querySelector('.auth-error');
+          if (existingError) existingError.remove();
           
           try {
             console.log('🔧 Making authentication request from useEffect');
@@ -147,10 +156,7 @@ export default function LoginPage() {
               }
               
               console.log('🔄 Redirecting to admin dashboard from useEffect');
-              router.push('/admin');
-              setTimeout(() => {
-                window.location.replace('/admin');
-              }, 1000);
+              window.location.href = '/admin';
               
             } else {
               const errorText = await response.text();
@@ -169,7 +175,10 @@ export default function LoginPage() {
                 console.error('❌ Could not parse error response from useEffect');
               }
               
-              setError(errorMessage);
+              const errorDiv = document.createElement('div');
+              errorDiv.className = 'auth-error rounded-md bg-red-50 p-4 mt-4';
+              errorDiv.innerHTML = `<div class="text-sm text-red-700">${errorMessage}</div>`;
+              form.appendChild(errorDiv);
             }
           } catch (error) {
             console.error('🔥 Authentication error from useEffect:', error);
@@ -178,11 +187,13 @@ export default function LoginPage() {
               message: (error as Error).message,
               stack: (error as Error).stack
             });
-            setError('Network error occurred. Please try again.');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'auth-error rounded-md bg-red-50 p-4 mt-4';
+            errorDiv.innerHTML = '<div class="text-sm text-red-700">Network error occurred. Please try again.</div>';
+            form.appendChild(errorDiv);
           } finally {
             newButton.disabled = false;
             newButton.textContent = 'Sign in';
-            setIsLoading(false);
           }
           
           return false;
@@ -231,7 +242,7 @@ export default function LoginPage() {
       clearTimeout(timeout1);
       clearTimeout(timeout2);
     };
-  }, [login, router, setIsLoading, setError]);
+  }, []); // No React dependencies - pure vanilla JS
 
 
 
