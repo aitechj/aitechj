@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { getAllAuthTokens, clearAllAuthTokens, setAuthToken, getAuthToken } from '../lib/auth/client-storage';
-import { isVercelPreview } from '../lib/auth/environment';
+import { shouldUseLocalStorage } from '../lib/auth/environment';
 
 
 export interface User {
@@ -33,7 +33,7 @@ export function useAuth() {
   });
 
   const updateTokens = useCallback(() => {
-    if (isVercelPreview()) {
+    if (shouldUseLocalStorage()) {
       const tokens = getAllAuthTokens();
       setAuthState((prev: AuthState) => ({
         ...prev,
@@ -57,7 +57,7 @@ export function useAuth() {
       if (response.ok) {
         const data = await response.json();
         
-        if (isVercelPreview() && data.tokens) {
+        if (shouldUseLocalStorage() && data.tokens) {
           if (data.tokens.accessToken) {
             setAuthToken('access', data.tokens.accessToken);
           }
@@ -66,7 +66,7 @@ export function useAuth() {
           }
         }
         
-        if (isVercelPreview() && data.guestToken) {
+        if (shouldUseLocalStorage() && data.guestToken) {
           setAuthToken('guest', data.guestToken);
         }
         
@@ -112,7 +112,7 @@ export function useAuth() {
   const getAuthHeaders = useCallback((): Record<string, string> => {
     const headers: Record<string, string> = {};
     
-    if (isVercelPreview()) {
+    if (shouldUseLocalStorage()) {
       const tokens = getAllAuthTokens();
       if (tokens.accessToken) {
         headers['Authorization'] = `Bearer ${tokens.accessToken}`;

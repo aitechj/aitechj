@@ -1,4 +1,4 @@
-import { isVercelPreview } from './environment';
+import { shouldUseLocalStorage } from './environment';
 import { setAuthToken, getAuthToken } from './client-storage';
 
 export async function refreshTokens(): Promise<boolean> {
@@ -7,7 +7,7 @@ export async function refreshTokens(): Promise<boolean> {
       'Content-Type': 'application/json',
     };
 
-    if (isVercelPreview()) {
+    if (shouldUseLocalStorage()) {
       const refreshToken = getAuthToken('refresh');
       if (refreshToken) {
         headers['Authorization'] = `Bearer ${refreshToken}`;
@@ -23,7 +23,7 @@ export async function refreshTokens(): Promise<boolean> {
     if (response.ok) {
       const data = await response.json();
       
-      if (isVercelPreview() && data.tokens) {
+      if (shouldUseLocalStorage() && data.tokens) {
         if (data.tokens.accessToken) {
           setAuthToken('access', data.tokens.accessToken);
         }
