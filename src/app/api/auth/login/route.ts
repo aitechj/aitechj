@@ -123,6 +123,15 @@ export async function POST(request: NextRequest) {
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
+   console.log('🍪 Setting auth_hint cookie');
+   response.cookies.set('auth_hint', 'true', {
+     httpOnly: false, // ❗ this makes it readable by middleware
+     secure: process.env.NODE_ENV === 'production',
+     sameSite: 'lax',
+     path: '/',
+     maxAge: 15 * 60, // optional: match token expiry
+    });
+
     console.log('✅ Login successful, returning response');
     return response;
   } catch (error) {
