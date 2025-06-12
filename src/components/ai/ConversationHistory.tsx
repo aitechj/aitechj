@@ -32,15 +32,15 @@ export function ConversationHistory() {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-4">Recent Conversations</h3>
+      <h3 className="text-lg font-semibold text-black">Conversation History</h3>
       
       {conversations.length === 0 ? (
-        <p className="text-gray-500">No conversations yet. Start chatting to see your history!</p>
+        <p className="text-sm text-black">No conversations yet. Start chatting to see your history!</p>
       ) : (
         <div className="space-y-3">
           {conversations.slice(0, 5).map((conv) => (
             <div key={conv.id} className="border-b pb-3 last:border-b-0">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-800">
                 {new Date(conv.createdAt).toLocaleDateString()}
               </div>
               <div className="text-sm mt-1">
