@@ -15,34 +15,46 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Starting quota check...');
     
-    const threadId = request.headers.get('X-Thread-ID') || undefined;
     let user;
     let guestResult;
     
-    if (threadId) {
-      console.log('🔍 Found threadId in header, using for session persistence:', threadId);
-      const existingGuestToken = request.cookies.get("guest_token")?.value;
-      if (existingGuestToken) {
-        user = await validateGuestToken(existingGuestToken);
-        if (user && user.userId === threadId) {
-          console.log('✅ Valid guest token matches threadId:', user.userId);
+    try {
+      user = await getCurrentUser(request);
+      if (user) {
+        console.log('✅ Authenticated user found for quota:', { userId: user.userId, role: user.role, tier: user.subscriptionTier });
+      }
+    } catch (error) {
+      console.log('⚠️ No authenticated user found, falling back to guest logic');
+    }
+    
+    if (!user) {
+      const threadId = request.headers.get('X-Thread-ID') || undefined;
+      
+      if (threadId) {
+        console.log('🔍 Found threadId in header, using for session persistence:', threadId);
+        const existingGuestToken = request.cookies.get("guest_token")?.value;
+        if (existingGuestToken) {
+          user = await validateGuestToken(existingGuestToken);
+          if (user && user.userId === threadId) {
+            console.log('✅ Valid guest token matches threadId:', user.userId);
+          } else {
+            console.log('⚠️ Guest token does not match threadId, creating new session');
+            guestResult = await getOrCreateGuestUser(request, threadId);
+            user = guestResult.user;
+          }
         } else {
-          console.log('⚠️ Guest token does not match threadId, creating new session');
+          console.log('⚠️ No guest token found with threadId, creating new session');
           guestResult = await getOrCreateGuestUser(request, threadId);
           user = guestResult.user;
         }
       } else {
-        console.log('⚠️ No guest token found with threadId, creating new session');
+        console.log('🔍 No threadId in header, using standard guest user flow');
         guestResult = await getOrCreateGuestUser(request, threadId);
         user = guestResult.user;
       }
-    } else {
-      console.log('🔍 No threadId in header, using standard guest user flow');
-      guestResult = await getOrCreateGuestUser(request, threadId);
-      user = guestResult.user;
     }
     
-    console.log('✅ Guest user obtained:', user.userId);
+    console.log('✅ Final user for quota check:', { userId: user.userId, tier: user.subscriptionTier });
     
     const usageCount = await getMonthlyUsage(user.userId);
     const { getQuotaLimit } = await import('@/lib/ai/quota-config');

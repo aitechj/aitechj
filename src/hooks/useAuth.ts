@@ -145,8 +145,36 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
-    updateTokens();
-    setAuthState((prev: AuthState) => ({ ...prev, isLoading: false }));
+    const initializeAuth = async () => {
+      console.log('🔍 Initializing authentication...');
+      
+      updateTokens();
+      
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ User data fetched from server:', data.user);
+          setAuthState((prev: AuthState) => ({
+            ...prev,
+            user: data.user,
+            isAuthenticated: true,
+            isLoading: false,
+          }));
+        } else {
+          console.log('⚠️ No authenticated user found on server');
+          setAuthState((prev: AuthState) => ({ ...prev, isLoading: false }));
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch user data:', error);
+        setAuthState((prev: AuthState) => ({ ...prev, isLoading: false }));
+      }
+    };
+    
+    initializeAuth();
   }, [updateTokens]);
 
   return {
