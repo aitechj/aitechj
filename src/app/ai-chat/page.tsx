@@ -4,12 +4,26 @@ import { UsageDashboard } from '../../components/ai/UsageDashboard';
 import { CostMonitor } from '../../components/ai/CostMonitor';
 import { ConversationHistory } from '../../components/ai/ConversationHistory';
 import { QuotaProvider } from '@/contexts/QuotaContext';
+import { Button } from '../../components/ui/Button';
+import { useRouter } from 'next/navigation';
 
 export default function AIChatPage() {
+  const router = useRouter();
+
   return (
     <QuotaProvider>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/')}
+              className="mb-4"
+            >
+              ← Back to Home
+            </Button>
+          </div>
+          
           <h1 className="text-3xl font-bold mb-8">AI Learning Assistant</h1>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

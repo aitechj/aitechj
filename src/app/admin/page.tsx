@@ -9,6 +9,7 @@ import { CostMonitor } from '../../components/ai/CostMonitor';
 import { ConversationHistory } from '../../components/ai/ConversationHistory';
 import { QuotaProvider } from '@/contexts/QuotaContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 interface Topic {
   id: string;
@@ -31,11 +32,23 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [csrfToken, setCsrfToken] = useState('');
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+
+  const isAdmin = user?.role === 'admin' || user?.subscriptionTier === 'admin';
+  const isBasicOrPremium = user?.subscriptionTier === 'basic' || user?.subscriptionTier === 'premium';
 
   useEffect(() => {
     fetchTopics();
     fetchCSRFToken();
-  }, []);
+    
+    console.log('🔍 Admin Dashboard - User Debug Info:');
+    console.log('User object:', user);
+    console.log('User role:', user?.role);
+    console.log('User subscriptionTier:', user?.subscriptionTier);
+    console.log('isAuthenticated:', isAuthenticated);
+    console.log('authLoading:', authLoading);
+    console.log('isAdmin calculated:', isAdmin);
+  }, [user, isAuthenticated, authLoading, isAdmin]);
 
   const fetchCSRFToken = async () => {
     try {
@@ -101,13 +114,23 @@ export default function AdminDashboard() {
     );
   }
 
-  const isAdmin = user?.role === 'admin' || user?.subscriptionTier === 'admin';
-  const isBasicOrPremium = user?.subscriptionTier === 'basic' || user?.subscriptionTier === 'premium';
+
 
   return (
     <QuotaProvider>
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Navigation Header */}
+          <div className="mb-6">
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/')}
+              className="mb-4"
+            >
+              ← Back to Home
+            </Button>
+          </div>
+
           {/* Header - Different for admin vs basic/premium users */}
           <div className="mb-8">
             {isAdmin ? (
@@ -121,6 +144,11 @@ export default function AdminDashboard() {
                 <p className="mt-2 text-gray-600">Get AI-powered help with your learning journey</p>
               </>
             )}
+            
+            {/* Debug info - remove in production */}
+            <div className="mt-2 text-xs text-gray-500">
+              Debug: role={user?.role}, tier={user?.subscriptionTier}, isAdmin={isAdmin.toString()}
+            </div>
           </div>
 
         {/* AI Learning Assistant Section */}
