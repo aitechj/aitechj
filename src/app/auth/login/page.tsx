@@ -122,8 +122,11 @@ export default function LoginPage() {
 
   async function executeAuthentication() {
     console.log('🧠 Running robust fallback authentication');
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
+    const emailInput = document.querySelector('input[name="email"]');
+    const passwordInput = document.querySelector('input[name="password"]');
+    const email = emailInput?.value?.trim() || '';
+    const password = passwordInput?.value?.trim() || '';
+    console.log('🔍 Captured values - email:', email, 'password length:', password.length);
     if (!email || !password) return alert('Email and password are required.');
 
     button.disabled = true;
@@ -144,7 +147,8 @@ export default function LoginPage() {
         window.location.href = '/admin';
       } else {
         const errText = await response.text();
-        alert('Login failed: ' + errText);
+        console.error('❌ Login failed:', errText);
+        alert('Login failed: ' + (errText || 'Unknown error'));
       }
     } catch (e) {
       console.error('🔥 Network error', e);
@@ -157,11 +161,13 @@ export default function LoginPage() {
 
   button.addEventListener('click', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     executeAuthentication();
   });
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     executeAuthentication();
   });
 })();
