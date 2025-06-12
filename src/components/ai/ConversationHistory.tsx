@@ -32,7 +32,7 @@ export function ConversationHistory() {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-4">Recent Conversations</h3>
+      <h3 className="text-lg font-semibold mb-4 text-gray-900">Recent Conversations</h3>
       
       {conversations.length === 0 ? (
         <p className="text-gray-500">No conversations yet. Start chatting to see your history!</p>
