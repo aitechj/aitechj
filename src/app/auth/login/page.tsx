@@ -39,8 +39,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white shadow rounded">
-      <h1 className="text-xl font-bold mb-4">Login to AITechJ</h1>
+  <div className="min-h-screen bg-black flex items-center justify-center px-4">
+    <div className="w-full max-w-md bg-white p-6 rounded shadow-md">
+      <h1 className="text-xl font-bold mb-4 text-center">Login to AITechJ</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm">Email</label>
@@ -67,12 +68,12 @@ export default function LoginPage() {
         {error && <div className="text-red-600 text-sm">{error}</div>}
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
           disabled={loading}
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
     </div>
-  );
-}
+  </div>
+);
