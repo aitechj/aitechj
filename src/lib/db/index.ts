@@ -149,11 +149,41 @@ function createStubDb() {
       return createQueryChain(tableName, filteredData, newConditions);
     },
     leftJoin: (joinTable: any, condition: any) => {
+      console.log('🔍 LEFT JOIN called with:', { 
+        tableName, 
+        joinTable: joinTable?.constructor?.name,
+        condition: condition ? Object.keys(condition) : 'null',
+        conditionLeft: condition?.left,
+        conditionRight: condition?.right
+      });
+      
       const joinedData = data.map(record => {
         let joinedRecord = null;
+        console.log('🔍 Processing record for join:', { 
+          recordId: record.id, 
+          recordRoleId: record.roleId,
+          tableName,
+          conditionCheck: tableName === 'users' && condition?.left?.name === 'roleId'
+        });
+        
         if (tableName === 'users' && condition?.left?.name === 'roleId') {
           const roleData = Array.from(stubStorage.userRoles.values());
+          console.log('🔍 Available roles:', roleData.map(r => ({ id: r.id, name: r.name })));
           joinedRecord = roleData.find(role => role.id === record.roleId) || null;
+          console.log('🔍 Role lookup result:', { 
+            searchingForRoleId: record.roleId, 
+            foundRole: joinedRecord ? { id: joinedRecord.id, name: joinedRecord.name } : null 
+          });
+        } else {
+          console.log('🔍 Join condition not met - using fallback logic');
+          if (tableName === 'users' && record.roleId) {
+            const roleData = Array.from(stubStorage.userRoles.values());
+            joinedRecord = roleData.find(role => role.id === record.roleId) || null;
+            console.log('🔍 Fallback role lookup:', { 
+              searchingForRoleId: record.roleId, 
+              foundRole: joinedRecord ? { id: joinedRecord.id, name: joinedRecord.name } : null 
+            });
+          }
         }
         return { user: record, role: joinedRecord };
       });
