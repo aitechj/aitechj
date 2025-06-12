@@ -34,15 +34,14 @@ export function QuotaProvider({ children }: QuotaProviderProps) {
   const refreshQuota = async (retryCount = 0) => {
     try {
       const threadId = localStorage.getItem('threadId');
-      const authHeaders = getAuthHeaders();
       const headers: Record<string, string> = { 
-        'Content-Type': 'application/json',
-        ...authHeaders
+        'Content-Type': 'application/json'
       };
       if (threadId) {
         headers['X-Thread-ID'] = threadId;
       }
       
+      console.log('🔍 QuotaContext: Making quota API call with cookies only (no Authorization header)');
       const response = await fetch('/api/ai/quota', {
         credentials: 'include',
         headers
