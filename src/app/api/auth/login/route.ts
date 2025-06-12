@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
       subscriptionTier: user.subscriptionTier || 'guest',
     };
 
+    console.log('🔐 Creating JWT payload:', jwtPayload);
     console.log('🔐 Creating tokens for user:', user.id);
     const accessToken = await signJWT(jwtPayload, '15m');
     const refreshToken = await generateRefreshToken();

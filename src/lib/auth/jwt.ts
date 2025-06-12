@@ -57,27 +57,42 @@ export function signJWT(payload: Record<string, any>, expiresIn?: string): strin
 
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
+    console.log('🔍 Verifying JWT token structure...');
     const parts = token.split('.');
     if (parts.length !== 3) {
+      console.log('❌ JWT token has invalid structure - expected 3 parts, got:', parts.length);
       return null;
     }
 
     const [header, payload, signature] = parts;
     
+    console.log('🔍 Verifying JWT signature...');
     const expectedSignature = base64UrlEncode(JWT_SECRET + header + payload);
     if (signature !== expectedSignature) {
+      console.log('❌ JWT signature verification failed');
       return null;
     }
 
+    console.log('🔍 Decoding JWT payload...');
     const decoded = JSON.parse(base64UrlDecode(payload)) as JWTPayload;
+    console.log('🔍 Decoded JWT payload:', {
+      userId: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
+      subscriptionTier: decoded.subscriptionTier,
+      exp: decoded.exp,
+      currentTime: Math.floor(Date.now() / 1000)
+    });
     
     if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+      console.log('❌ JWT token has expired');
       return null;
     }
 
+    console.log('✅ JWT verification successful');
     return decoded;
   } catch (error) {
-    console.error('JWT verification failed:', error);
+    console.error('❌ JWT verification failed:', error);
     return null;
   }
 }
@@ -100,35 +115,60 @@ export function decodeJWT(token: string): JWTPayload | null {
 
 export async function getCurrentUser(request?: any): Promise<JWTPayload | null> {
   try {
+    console.log('🔍 getCurrentUser called');
     let token: string | undefined;
     
     if (request) {
       const authHeader = request.headers.get('Authorization');
       if (authHeader && authHeader.startsWith('Bearer ')) {
         token = authHeader.substring(7);
+        console.log('🔍 Found Bearer token in Authorization header');
       }
       
       if (!token) {
-        token = request.cookies.get('access_token')?.value || request.cookies.get('guest_token')?.value;
+        const accessToken = request.cookies.get('access_token')?.value;
+        const guestToken = request.cookies.get('guest_token')?.value;
+        token = accessToken || guestToken;
+        console.log('🔍 Token from cookies:', { 
+          hasAccessToken: !!accessToken, 
+          hasGuestToken: !!guestToken, 
+          usingToken: accessToken ? 'access_token' : (guestToken ? 'guest_token' : 'none')
+        });
       }
     } else {
       const { cookies } = await import('next/headers');
       const cookieStore = cookies();
-      token = cookieStore.get('access_token')?.value || cookieStore.get('guest_token')?.value;
+      const accessToken = cookieStore.get('access_token')?.value;
+      const guestToken = cookieStore.get('guest_token')?.value;
+      token = accessToken || guestToken;
+      console.log('🔍 Server-side token from cookies:', { 
+        hasAccessToken: !!accessToken, 
+        hasGuestToken: !!guestToken, 
+        usingToken: accessToken ? 'access_token' : (guestToken ? 'guest_token' : 'none')
+      });
     }
     
     if (!token) {
+      console.log('❌ No authentication token found');
       const error = new Error('No authentication token found');
       error.name = 'UnauthorizedError';
       throw error;
     }
     
-    return await verifyJWT(token);
+    console.log('🔍 Verifying JWT token...');
+    const user = await verifyJWT(token);
+    console.log('🔍 JWT verification result:', user ? { 
+      userId: user.userId, 
+      role: user.role, 
+      tier: user.subscriptionTier 
+    } : 'null');
+    
+    return user;
   } catch (error: any) {
     if (error.name === 'UnauthorizedError') {
       throw error;
     }
-    console.error('Get current user failed:', error);
+    console.error('❌ Get current user failed:', error);
     const authError = new Error('Authentication failed');
     authError.name = 'UnauthorizedError';
     throw authError;
