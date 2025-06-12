@@ -34,6 +34,9 @@ export default function AdminDashboard() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
+  const isAdmin = user?.role === 'admin' || user?.subscriptionTier === 'admin';
+  const isBasicOrPremium = user?.subscriptionTier === 'basic' || user?.subscriptionTier === 'premium';
+
   useEffect(() => {
     fetchTopics();
     fetchCSRFToken();
@@ -45,7 +48,7 @@ export default function AdminDashboard() {
     console.log('isAuthenticated:', isAuthenticated);
     console.log('authLoading:', authLoading);
     console.log('isAdmin calculated:', isAdmin);
-  }, [user, isAuthenticated, authLoading]);
+  }, [user, isAuthenticated, authLoading, isAdmin]);
 
   const fetchCSRFToken = async () => {
     try {
@@ -111,8 +114,7 @@ export default function AdminDashboard() {
     );
   }
 
-  const isAdmin = user?.role === 'admin' || user?.subscriptionTier === 'admin';
-  const isBasicOrPremium = user?.subscriptionTier === 'basic' || user?.subscriptionTier === 'premium';
+
 
   return (
     <QuotaProvider>
