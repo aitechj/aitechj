@@ -11,7 +11,7 @@ export function UsageDashboard() {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-4">AI Usage</h3>
+      <h3 className="text-lg font-semibold mb-4 text-gray-900">AI Usage</h3>
       
       <div className="mb-4">
         <div className="flex justify-between text-sm text-gray-600 mb-1">
