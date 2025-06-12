@@ -23,18 +23,32 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
+    console.log("📤 React form submit handler triggered");
+    console.log("🔍 Captured values:", { 
+      email, 
+      password: password ? '[REDACTED]' : '', 
+      passwordLength: password.length 
+    });
+
     try {
       const formData = new FormData(e.target as HTMLFormElement);
       const formEmail = formData.get('email') as string || email;
       const formPassword = formData.get('password') as string || password;
+      
+      console.log("🌐 Calling useAuth login...");
       const result = await login(formEmail, formPassword);
 
+      console.log("🧾 Login result:", { success: result.success });
+
       if (result.success) {
+        console.log("✅ Login success, redirecting to /admin...");
         router.push('/admin');
       } else {
+        console.error("❌ Login failed:", result.error);
         setError(result.error || 'Login failed');
       }
     } catch (err) {
+      console.error("🔥 Network error during login:", err);
       setError('Network error occurred');
     } finally {
       setIsLoading(false);
@@ -42,94 +56,8 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    console.log("🚀 useEffect running on client");
-    console.log("🔍 Client-side authentication setup executing...");
-
-    const form = document.querySelector('form');
-    const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
-    const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement;
-    const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
-
-    console.log("🔍 Form elements found:", {
-      form: !!form,
-      emailInput: !!emailInput,
-      passwordInput: !!passwordInput,
-      submitButton: !!submitButton
-    });
-
-    if (!form || !emailInput || !passwordInput || !submitButton) {
-      console.warn("⚠️ Form elements not found - useEffect setup aborted");
-      return;
-    }
-
-    const handleFormSubmit = async (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      console.log("📤 useEffect form submit handler triggered");
-      
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-      
-      console.log("🔍 Captured values:", { 
-        email, 
-        password: password ? '[REDACTED]' : '', 
-        passwordLength: password.length 
-      });
-
-      if (!email || !password) {
-        console.warn("⚠️ Missing email or password");
-        alert('Email and password are required.');
-        return;
-      }
-
-      submitButton.disabled = true;
-      submitButton.textContent = 'Signing in...';
-      console.log("🔄 Button state updated, making fetch request...");
-
-      try {
-        console.log("🌐 Fetching /api/auth/login...");
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json'
-          },
-          body: JSON.stringify({ email, password })
-        });
-
-        console.log("🧾 Response received:", { status: response.status, ok: response.ok });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("✅ Login success, response data:", data);
-          console.log("🔄 Redirecting to /admin...");
-          window.location.href = '/admin';
-        } else {
-          const errText = await response.text();
-          console.error("❌ Login failed:", errText);
-          alert('Login failed: ' + (errText || 'Unknown error'));
-        }
-      } catch (err) {
-        console.error("🔥 Network error during fetch:", err);
-        alert('Network error occurred');
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Sign in';
-        console.log("🔄 Button state reset");
-      }
-    };
-
-    console.log("🔗 Attaching useEffect event listeners...");
-    form.addEventListener('submit', handleFormSubmit);
-    
-    console.log("✅ useEffect event listeners attached successfully");
-    console.log("🔍 useEffect authentication setup completed");
-
-    return () => {
-      console.log("🧹 Cleaning up useEffect event listeners");
-      form.removeEventListener('submit', handleFormSubmit);
-    };
+    console.log("🚀 React authentication component mounted");
+    console.log("🔍 Using React form handling with useAuth hook");
   }, []);
 
   return (
