@@ -33,9 +33,21 @@ export async function POST(request: NextRequest) {
     let guestResult;
     
     try {
+      console.log('🔍 Chat API: Attempting getCurrentUser...');
+      console.log('🔍 Chat API: Request cookies available:', {
+        access_token: !!request.cookies.get('access_token')?.value,
+        guest_token: !!request.cookies.get('guest_token')?.value,
+        auth_hint: !!request.cookies.get('auth_hint')?.value
+      });
       user = await getCurrentUser(request);
       console.log('✅ Authenticated user found for chat:', user?.userId);
+      console.log('🔍 Chat API user details:', { 
+        userId: user?.userId, 
+        role: user?.role, 
+        subscriptionTier: user?.subscriptionTier 
+      });
     } catch (err: any) {
+      console.log('❌ Chat API getCurrentUser failed:', err.name, err.message);
       if (err.name === "UnauthorizedError") {
         console.log('🔍 No authenticated user, checking for guest token...');
         const existingGuestToken = request.cookies.get("guest_token")?.value;
@@ -91,7 +103,16 @@ export async function POST(request: NextRequest) {
     const cachedResponse = await getCachedResponse(cacheKey);
     
     if (cachedResponse) {
+      if (!user || !user.subscriptionTier) {
+        console.warn('⚠️ Chat API: user or tier missing for cached response, treating as guest', user);
+        user = { userId: 'guest', subscriptionTier: 'guest', role: 'guest' };
+      }
+
       const { atomicQuotaCheckAndInsert } = await import('@/lib/ai/quota');
+      console.log('🔍 Chat API calling atomicQuotaCheckAndInsert (cached) with:', { 
+        userId: user.userId, 
+        subscriptionTier: user.subscriptionTier 
+      });
       const quotaResult = await atomicQuotaCheckAndInsert(
         user.userId,
         user.subscriptionTier,
@@ -151,7 +172,16 @@ export async function POST(request: NextRequest) {
 
     const aiResponse = await generateAIResponse(sanitizedMessages, user.subscriptionTier, sanitizedContext);
 
+    if (!user || !user.subscriptionTier) {
+      console.warn('⚠️ Chat API: user or tier missing, treating as guest', user);
+      user = { userId: 'guest', subscriptionTier: 'guest', role: 'guest' };
+    }
+
     const { atomicQuotaCheckAndInsert } = await import('@/lib/ai/quota');
+    console.log('🔍 Chat API calling atomicQuotaCheckAndInsert (main) with:', { 
+      userId: user.userId, 
+      subscriptionTier: user.subscriptionTier 
+    });
     const quotaResult = await atomicQuotaCheckAndInsert(
       user.userId,
       user.subscriptionTier,

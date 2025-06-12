@@ -40,8 +40,7 @@ export function ChatInterface() {
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
+          'Content-Type': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify({ messages: [...messages, userMessage] }),

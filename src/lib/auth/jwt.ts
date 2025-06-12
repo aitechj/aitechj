@@ -100,35 +100,64 @@ export function decodeJWT(token: string): JWTPayload | null {
 
 export async function getCurrentUser(request?: any): Promise<JWTPayload | null> {
   try {
+    console.log('🔍 getCurrentUser called');
     let token: string | undefined;
     
     if (request) {
       const authHeader = request.headers.get('Authorization');
       if (authHeader && authHeader.startsWith('Bearer ')) {
         token = authHeader.substring(7);
+        console.log('🔍 Using Bearer token from Authorization header');
       }
       
       if (!token) {
-        token = request.cookies.get('access_token')?.value || request.cookies.get('guest_token')?.value;
+        const accessToken = request.cookies.get('access_token')?.value;
+        const guestToken = request.cookies.get('guest_token')?.value;
+        token = accessToken || guestToken;
+        console.log('🔍 Token selection from cookies:', { 
+          hasAccessToken: !!accessToken, 
+          hasGuestToken: !!guestToken, 
+          usingToken: accessToken ? 'access_token' : (guestToken ? 'guest_token' : 'none'),
+          accessTokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : null,
+          guestTokenPreview: guestToken ? guestToken.substring(0, 20) + '...' : null
+        });
       }
     } else {
       const { cookies } = await import('next/headers');
       const cookieStore = cookies();
-      token = cookieStore.get('access_token')?.value || cookieStore.get('guest_token')?.value;
+      const accessToken = cookieStore.get('access_token')?.value;
+      const guestToken = cookieStore.get('guest_token')?.value;
+      token = accessToken || guestToken;
+      console.log('🔍 Server-side token selection:', { 
+        hasAccessToken: !!accessToken, 
+        hasGuestToken: !!guestToken, 
+        usingToken: accessToken ? 'access_token' : (guestToken ? 'guest_token' : 'none'),
+        accessTokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : null,
+        guestTokenPreview: guestToken ? guestToken.substring(0, 20) + '...' : null
+      });
     }
     
     if (!token) {
+      console.log('❌ No authentication token found');
       const error = new Error('No authentication token found');
       error.name = 'UnauthorizedError';
       throw error;
     }
     
-    return await verifyJWT(token);
+    console.log('🔍 Verifying JWT token...');
+    const user = await verifyJWT(token);
+    console.log('🔍 JWT verification result:', user ? { 
+      userId: user.userId, 
+      role: user.role, 
+      tier: user.subscriptionTier 
+    } : 'null');
+    
+    return user;
   } catch (error: any) {
     if (error.name === 'UnauthorizedError') {
       throw error;
     }
-    console.error('Get current user failed:', error);
+    console.error('❌ Get current user failed:', error);
     const authError = new Error('Authentication failed');
     authError.name = 'UnauthorizedError';
     throw authError;
