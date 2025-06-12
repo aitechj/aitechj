@@ -113,26 +113,50 @@ export default function LoginPage() {
         <script
           dangerouslySetInnerHTML={{
             __html: `
+console.log("🔍 Login script loaded in: ", window.location.hostname);
+console.log("🔍 Script execution timestamp: ", new Date().toISOString());
+
 (function setup() {
+  console.log("🔍 Setup function executing...");
   const form = document.querySelector('form');
   const button = document.querySelector('button[type="submit"]');
   const emailInput = document.querySelector('input[name="email"]');
   const passwordInput = document.querySelector('input[name="password"]');
-  if (!form || !button || !emailInput || !passwordInput) return;
+  
+  console.log("🔍 Form elements found:", {
+    form: !!form,
+    button: !!button,
+    emailInput: !!emailInput,
+    passwordInput: !!passwordInput
+  });
+  
+  if (!form || !button || !emailInput || !passwordInput) {
+    console.warn("⚠️ Missing required form elements - setup aborted");
+    return;
+  }
 
   async function executeAuthentication() {
     console.log('🧠 Running robust fallback authentication');
+    console.log('📤 Attempting login...');
+    
     const emailInput = document.querySelector('input[name="email"]');
     const passwordInput = document.querySelector('input[name="password"]');
     const email = emailInput?.value?.trim() || '';
     const password = passwordInput?.value?.trim() || '';
-    console.log('🔍 Captured values - email:', email, 'password length:', password.length);
-    if (!email || !password) return alert('Email and password are required.');
+    
+    console.log('🔍 Captured values:', { email, password: password ? '[REDACTED]' : '', passwordLength: password.length });
+    
+    if (!email || !password) {
+      console.warn('⚠️ Missing email or password');
+      return alert('Email and password are required.');
+    }
 
     button.disabled = true;
     button.textContent = 'Signing in...';
+    console.log('🔄 Button state updated, making fetch request...');
 
     try {
+      console.log('🌐 Fetching /api/auth/login...');
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -142,8 +166,12 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password })
       });
 
+      console.log('🧾 Response received:', { status: response.status, ok: response.ok });
+
       if (response.ok) {
-        console.log('✅ Login success');
+        const data = await response.json();
+        console.log('✅ Login success, response data:', data);
+        console.log('🔄 Redirecting to /admin...');
         window.location.href = '/admin';
       } else {
         const errText = await response.text();
@@ -151,26 +179,35 @@ export default function LoginPage() {
         alert('Login failed: ' + (errText || 'Unknown error'));
       }
     } catch (e) {
-      console.error('🔥 Network error', e);
+      console.error('🔥 Network error during fetch:', e);
       alert('Network error occurred');
     } finally {
       button.disabled = false;
       button.textContent = 'Sign in';
+      console.log('🔄 Button state reset');
     }
   }
 
+  console.log('🔗 Attaching event listeners...');
+  
   button.addEventListener('click', (e) => {
+    console.log('🖱️ Button click event triggered');
     e.preventDefault();
     e.stopPropagation();
     executeAuthentication();
   });
 
   form.addEventListener('submit', (e) => {
+    console.log('📝 Form submit event triggered');
     e.preventDefault();
     e.stopPropagation();
     executeAuthentication();
   });
+  
+  console.log('✅ Event listeners attached successfully');
 })();
+
+console.log("🔍 Login script setup completed");
             `
           }}
         />
