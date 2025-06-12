@@ -5,6 +5,8 @@ import { TopicForm } from '../../components/admin/TopicForm';
 import { Button } from '../../components/ui/Button';
 import { ChatInterface } from '../../components/ai/ChatInterface';
 import { UsageDashboard } from '../../components/ai/UsageDashboard';
+import { CostMonitor } from '../../components/ai/CostMonitor';
+import { ConversationHistory } from '../../components/ai/ConversationHistory';
 import { QuotaProvider } from '@/contexts/QuotaContext';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -137,8 +139,10 @@ export default function AdminDashboard() {
               <div className="lg:col-span-2">
                 <ChatInterface />
               </div>
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 space-y-6">
                 <UsageDashboard />
+                {isAdmin && <CostMonitor />}
+                <ConversationHistory />
               </div>
             </div>
           </div>
