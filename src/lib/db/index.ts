@@ -22,92 +22,97 @@ console.log('Database connection debug:', {
 let client: any = null;
 let db: any = null;
 
+const stubStorage = {
+  users: new Map<string, any>(),
+  aiConversations: new Map<string, any>(),
+  userRoles: new Map<string, any>(),
+};
+
+let stubInitialized = false;
+
 function createStubDb() {
   const stubLocks = new Map<string, Promise<void>>();
-  
-  const stubStorage = {
-    users: new Map<string, any>(),
-    aiConversations: new Map<string, any>(),
-    userRoles: new Map<string, any>(),
-  };
 
-  const bcrypt = require('bcryptjs');
-  
-  stubStorage.userRoles.set('1', {
-    id: 1,
-    name: 'admin',
-    description: 'Administrator with full system access',
-    permissions: JSON.stringify(['read', 'write', 'delete', 'admin'])
-  });
-  stubStorage.userRoles.set('2', {
-    id: 2,
-    name: 'user',
-    description: 'Regular user with basic access',
-    permissions: JSON.stringify(['read'])
-  });
-  stubStorage.userRoles.set('3', {
-    id: 3,
-    name: 'guest',
-    description: 'Guest user with limited access',
-    permissions: JSON.stringify(['read'])
-  });
+  if (!stubInitialized) {
+    const bcrypt = require('bcryptjs');
+    
+    stubStorage.userRoles.set('1', {
+      id: 1,
+      name: 'admin',
+      description: 'Administrator with full system access',
+      permissions: JSON.stringify(['read', 'write', 'delete', 'admin'])
+    });
+    stubStorage.userRoles.set('2', {
+      id: 2,
+      name: 'user',
+      description: 'Regular user with basic access',
+      permissions: JSON.stringify(['read'])
+    });
+    stubStorage.userRoles.set('3', {
+      id: 3,
+      name: 'guest',
+      description: 'Guest user with limited access',
+      permissions: JSON.stringify(['read'])
+    });
 
-  const testAdminPassword = process.env.TEST_ADMIN_PASSWORD;
-  const testBasicPassword = process.env.TEST_BASIC_PASSWORD;
-  const testPremiumPassword = process.env.TEST_PREMIUM_PASSWORD;
+    const testAdminPassword = process.env.TEST_ADMIN_PASSWORD;
+    const testBasicPassword = process.env.TEST_BASIC_PASSWORD;
+    const testPremiumPassword = process.env.TEST_PREMIUM_PASSWORD;
 
-  if (!testAdminPassword || !testBasicPassword || !testPremiumPassword) {
-    console.warn('⚠️ Test user passwords not configured via environment variables');
-    console.warn('⚠️ Skipping test user seeding - users will need to be created via other means');
-  } else {
+    if (!testAdminPassword || !testBasicPassword || !testPremiumPassword) {
+      console.warn('⚠️ Test user passwords not configured via environment variables');
+      console.warn('⚠️ Skipping test user seeding - users will need to be created via other means');
+    } else {
 
-  stubStorage.users.set('admin-user-id-12345', {
-    id: 'admin-user-id-12345',
-    name: 'Admin User',
-    email: 'admin@aitechj.com',
-    passwordHash: bcrypt.hashSync(testAdminPassword, 12),
-    roleId: 1,
-    subscriptionTier: 'admin',
-    periodStart: new Date(),
-    queriesUsed: 0,
-    emailVerified: true,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
+    stubStorage.users.set('admin-user-id-12345', {
+      id: 'admin-user-id-12345',
+      name: 'Admin User',
+      email: 'admin@aitechj.com',
+      passwordHash: bcrypt.hashSync(testAdminPassword, 12),
+      roleId: 1,
+      subscriptionTier: 'admin',
+      periodStart: new Date(),
+      queriesUsed: 0,
+      emailVerified: true,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
 
-  stubStorage.users.set('basic-user-id-12345', {
-    id: 'basic-user-id-12345',
-    name: 'Basic User',
-    email: 'basic@aitechj.com',
-    passwordHash: bcrypt.hashSync(testBasicPassword, 12),
-    roleId: 2,
-    subscriptionTier: 'basic',
-    periodStart: new Date(),
-    queriesUsed: 0,
-    emailVerified: true,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
+    stubStorage.users.set('basic-user-id-12345', {
+      id: 'basic-user-id-12345',
+      name: 'Basic User',
+      email: 'basic@aitechj.com',
+      passwordHash: bcrypt.hashSync(testBasicPassword, 12),
+      roleId: 2,
+      subscriptionTier: 'basic',
+      periodStart: new Date(),
+      queriesUsed: 0,
+      emailVerified: true,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
 
-  stubStorage.users.set('premium-user-id-12345', {
-    id: 'premium-user-id-12345',
-    name: 'Premium User',
-    email: 'premium@aitechj.com',
-    passwordHash: bcrypt.hashSync(testPremiumPassword, 12),
-    roleId: 2,
-    subscriptionTier: 'premium',
-    periodStart: new Date(),
-    queriesUsed: 0,
-    emailVerified: true,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
+    stubStorage.users.set('premium-user-id-12345', {
+      id: 'premium-user-id-12345',
+      name: 'Premium User',
+      email: 'premium@aitechj.com',
+      passwordHash: bcrypt.hashSync(testPremiumPassword, 12),
+      roleId: 2,
+      subscriptionTier: 'premium',
+      periodStart: new Date(),
+      queriesUsed: 0,
+      emailVerified: true,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    }
+
+    stubInitialized = true;
+    console.log('🌱 Stub database pre-seeded with test users and roles');
   }
-
-  console.log('🌱 Stub database pre-seeded with test users and roles');
   
   const createQueryChain = (tableName: string, data: any[] = [], whereConditions: any[] = []) => ({
     where: (condition: any) => {
@@ -132,7 +137,8 @@ function createStubDb() {
                   targetEmail = value;
                   console.log('🔍 Found email in query chunks:', targetEmail);
                   break;
-                } else if (value.startsWith('stub_') || value.includes('-user-id-') || value.length > 10) {
+                } else if (value.startsWith('stub_') || value.includes('-user-id-') || 
+                          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
                   targetId = value;
                   console.log('🔍 Found user ID in query chunks:', targetId);
                   break;
@@ -220,13 +226,13 @@ function createStubDb() {
       values: (data: any) => ({
         returning: (fields?: any) => {
           const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
-          const id = `stub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          const id = data.id || crypto.randomUUID();
           const record = { ...data, id };
           
           console.log(`💾 Stub database inserting into ${tableName}:`, record);
           
           if (tableName === 'users') {
-            stubStorage.users.set(data.id || id, record);
+            stubStorage.users.set(id, record);
           } else if (tableName === 'ai_conversations') {
             stubStorage.aiConversations.set(id, record);
           } else if (tableName === 'user_roles') {
@@ -238,14 +244,14 @@ function createStubDb() {
         onConflictDoNothing: () => ({
           returning: (fields?: any) => {
             const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
-            const id = `stub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const id = data.id || crypto.randomUUID();
             const record = { ...data, id };
             
             console.log(`💾 Stub database inserting (on conflict do nothing) into ${tableName}:`, record);
             
             if (tableName === 'users') {
-              if (!stubStorage.users.has(data.id)) {
-                stubStorage.users.set(data.id || id, record);
+              if (!stubStorage.users.has(id)) {
+                stubStorage.users.set(id, record);
               }
             } else if (tableName === 'ai_conversations') {
               stubStorage.aiConversations.set(id, record);
@@ -312,13 +318,13 @@ function createStubDb() {
             values: (data: any) => ({
               returning: (fields?: any) => {
                 const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
-                const id = `stub_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const id = data.id || crypto.randomUUID();
                 const record = { ...data, id };
                 
                 console.log(`💾 Stub transaction inserting into ${tableName}:`, record);
                 
                 if (tableName === 'users') {
-                  stubStorage.users.set(data.id || id, record);
+                  stubStorage.users.set(id, record);
                 } else if (tableName === 'ai_conversations') {
                   stubStorage.aiConversations.set(id, record);
                 } else if (tableName === 'user_roles') {
@@ -330,14 +336,14 @@ function createStubDb() {
               onConflictDoNothing: () => ({
                 returning: (fields?: any) => {
                   const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
-                  const id = `stub_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                  const id = data.id || crypto.randomUUID();
                   const record = { ...data, id };
                   
                   console.log(`💾 Stub transaction inserting (on conflict do nothing) into ${tableName}:`, record);
                   
                   if (tableName === 'users') {
-                    if (!stubStorage.users.has(data.id)) {
-                      stubStorage.users.set(data.id || id, record);
+                    if (!stubStorage.users.has(id)) {
+                      stubStorage.users.set(id, record);
                     }
                   } else if (tableName === 'ai_conversations') {
                     stubStorage.aiConversations.set(id, record);

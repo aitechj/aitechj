@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     const passwordHash = await hashPassword(password);
+    console.log('🔍 About to insert new user:', { name, email, roleId: guestRole[0].id });
     const newUser = await db
       .insert(users)
       .values({
@@ -60,10 +61,13 @@ export async function POST(request: NextRequest) {
         passwordHash,
         roleId: guestRole[0].id,
         subscriptionTier: 'free',
+        periodStart: new Date(),
+        queriesUsed: 0,
         emailVerified: false,
         isActive: true,
       })
       .returning();
+    console.log('✅ User insertion completed:', { userId: newUser[0].id, name: newUser[0].name });
 
     const jwtPayload: CustomJWTPayload = {
       userId: newUser[0].id,
@@ -104,6 +108,13 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+
+    response.cookies.set('auth_hint', 'authenticated', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60, // 15 minutes, same as access token
     });
 
     return response;
