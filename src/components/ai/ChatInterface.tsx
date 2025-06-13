@@ -14,6 +14,7 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const { quota, refreshQuota, setQuota } = useQuota();
   const { getAuthHeaders } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -73,10 +74,14 @@ export function ChatInterface() {
           }
         }
       }else {
-        const errorMessage = response.status === 429 
-          ? data.error || 'Monthly quota exceeded. Please upgrade your plan for more questions.'
-          : `Error: ${data.error || 'Something went wrong'}`;
-        setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: errorMessage }]);
+        if (response.status === 429) {
+          setIsQuotaExceeded(true);
+          const errorMessage = data.error || 'Your chat limit is over. To chat more, upgrade to Basic or Premium.';
+          setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: errorMessage }]);
+        } else {
+          const errorMessage = `Error: ${data.error || 'Something went wrong'}`;
+          setMessages((prev: Message[]) => [...prev, { role: 'assistant', content: errorMessage }]);
+        }
         try {
           await refreshQuota();
         } catch (error) {
@@ -111,11 +116,24 @@ export function ChatInterface() {
             </div>
           </div>
         )}
+        {isQuotaExceeded && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+            <p className="text-yellow-800 font-medium">
+              Your chat limit is over. To chat more, upgrade to Basic or Premium.
+            </p>
+            <button
+              onClick={() => window.location.href = '/subscription'}
+              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+            >
+              Upgrade Now
+            </button>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       
       <div className="border-t p-4">
-        {quota && (
+        {quota && quota.subscriptionTier !== 'free' && (
           <div className="text-sm text-gray-600 mb-2">
             Questions used: {quota.used}/{quota.quota} this month
             {quota.used >= quota.quota && (
@@ -132,7 +150,7 @@ export function ChatInterface() {
             onKeyPress={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (!loading && input.trim() && (!quota || quota.used < quota.quota)) {
+                if (!loading && input.trim() && (!quota || quota.used < quota.quota) && !isQuotaExceeded) {
                   sendMessage();
                 }
               }
@@ -140,7 +158,7 @@ export function ChatInterface() {
           />
           <Button 
             onClick={sendMessage} 
-            disabled={loading || !input.trim() || (quota ? quota.used >= quota.quota : false)}
+            disabled={loading || !input.trim() || (quota ? quota.used >= quota.quota : false) || isQuotaExceeded}
           >
             {loading ? 'Sending...' : 'Send'}
           </Button>

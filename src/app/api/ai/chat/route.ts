@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       if (quotaResult.quotaExceeded) {
         console.log('❌ Quota exceeded for cached response');
         return NextResponse.json(
-          { error: 'Monthly quota exceeded. Please upgrade your plan for more questions.' },
+          { error: 'Your chat limit is over. To chat more, upgrade to Basic or Premium.' },
           { status: 429 }
         );
       }
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
     if (quotaResult.quotaExceeded) {
       console.log('❌ Quota exceeded after AI response generated');
       return NextResponse.json(
-        { error: 'Monthly quota exceeded. Please upgrade your plan for more questions.' },
+        { error: 'Your chat limit is over. To chat more, upgrade to Basic or Premium.' },
         { status: 429 }
       );
     }

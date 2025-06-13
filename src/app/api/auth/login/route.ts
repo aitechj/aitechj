@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
 
     const jwtPayload: CustomJWTPayload = {
       userId: user.id,
+      name: user.name,
       email: user.email,
       role: role?.name || 'guest',
       subscriptionTier: user.subscriptionTier || 'guest',
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
       message: 'Login successful',
       user: {
         id: user.id,
+        name: user.name,
         email: user.email,
         role: role?.name || 'guest',
         subscriptionTier: user.subscriptionTier || 'guest',
