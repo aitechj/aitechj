@@ -1,42 +1,176 @@
-import React from 'react'
+'use client';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <h1 className="text-4xl font-bold text-center">
-          Welcome to AITechJ
-        </h1>
-        <div className="flex gap-4">
-          <a href="/auth/login" className="text-blue-600 hover:text-blue-800 underline">Login</a>
-          <a href="/ai-chat" className="text-green-600 hover:text-green-800 underline">AI Chat</a>
-        </div>
-      </div>
+  const [showSignup, setShowSignup] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
 
-      <div className="relative flex place-items-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-4">
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        router.push('/dashboard');
+      } else {
+        setError(data.error || 'Registration failed');
+      }
+    } catch (err) {
+      setError('Network error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+            Welcome to AITechJ
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            Master modern tech skills with AI as your personal tutor. Start learning for free today.
+          </p>
+          
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => setShowSignup(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors"
+            >
+              Free Learning
+            </button>
+            <a
+              href="/auth/login"
+              className="text-blue-600 hover:text-blue-800 px-8 py-3 rounded-lg font-semibold text-lg border border-blue-600 hover:border-blue-800 transition-colors"
+            >
+              Sign In
+            </a>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
             AI-Powered Technical Learning Platform
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Master modern tech skills with AI as your personal tutor
-          </p>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                Interactive Learning
+              </h3>
+              <p className="text-gray-600">
+                Engage with comprehensive tech curriculum designed for modern developers
+              </p>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                AI Assistant
+              </h3>
+              <p className="text-gray-600">
+                Get instant help and explanations from our advanced AI tutor
+              </p>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                Track Progress
+              </h3>
+              <p className="text-gray-600">
+                Monitor your learning journey with detailed progress tracking
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
-          <h3 className="mb-3 text-2xl font-semibold">
-            Phase 1{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              →
-            </span>
-          </h3>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Database & User Management system with authentication
-          </p>
+      {showSignup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Start Free Learning</h2>
+              <button
+                onClick={() => setShowSignup(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Create a password"
+                  required
+                />
+              </div>
+              
+              {error && (
+                <div className="text-red-600 text-sm">{error}</div>
+              )}
+              
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 px-4 rounded-md font-medium disabled:opacity-50"
+              >
+                {isLoading ? 'Creating Account...' : 'Create account'}
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
     </main>
-  )
+  );
 }

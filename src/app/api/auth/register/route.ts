@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const registerSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
@@ -14,7 +15,7 @@ const registerSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = registerSchema.parse(body);
+    const { name, email, password } = registerSchema.parse(body);
 
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
@@ -54,10 +55,11 @@ export async function POST(request: NextRequest) {
     const newUser = await db
       .insert(users)
       .values({
+        name,
         email,
         passwordHash,
         roleId: guestRole[0].id,
-        subscriptionTier: 'guest',
+        subscriptionTier: 'free',
         emailVerified: false,
         isActive: true,
       })
@@ -65,9 +67,10 @@ export async function POST(request: NextRequest) {
 
     const jwtPayload: CustomJWTPayload = {
       userId: newUser[0].id,
+      name: newUser[0].name,
       email: newUser[0].email,
       role: 'guest',
-      subscriptionTier: 'guest',
+      subscriptionTier: 'free',
     };
 
     const accessToken = await signJWT(jwtPayload, '15m');
@@ -79,9 +82,10 @@ export async function POST(request: NextRequest) {
         message: 'User registered successfully',
         user: {
           id: newUser[0].id,
+          name: newUser[0].name,
           email: newUser[0].email,
           role: 'guest',
-          subscriptionTier: 'guest',
+          subscriptionTier: 'free',
           emailVerified: false,
         },
       },

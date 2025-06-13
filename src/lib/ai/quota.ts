@@ -1,4 +1,4 @@
-import { db, aiConversations } from '../db';
+import { db, aiConversations, users } from '../db';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { QUOTA_CONFIG, type SubscriptionTier, getQuotaLimit } from './quota-config';
 
@@ -8,24 +8,17 @@ function startOfCurrentMonth(): Date {
 }
 
 export async function getMonthlyUsage(userId: string): Promise<number> {
-  const firstOfMonth = startOfCurrentMonth();
-  console.log('Checking quota for user:', userId, 'since:', firstOfMonth);
-  
-  try {
-    const conversations = await db
-      .select()
-      .from(aiConversations)
-      .where(and(
-        eq(aiConversations.userId, userId),
-        gte(aiConversations.createdAt, firstOfMonth)
-      ));
-    
-    console.log('Found conversations:', conversations.length);
-    return conversations.length;
-  } catch (error) {
-    console.error('❌ Failed to get monthly usage:', error);
+  const userRecord = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (userRecord.length === 0) {
     return 0;
   }
+
+  return userRecord[0].queriesUsed || 0;
 }
 
 export async function atomicQuotaCheckAndInsert(
@@ -45,7 +38,6 @@ export async function atomicQuotaCheckAndInsert(
   conversationId?: string;
 }> {
   const limit = getQuotaLimit(subscriptionTier);
-  const firstOfMonth = startOfCurrentMonth();
   
   try {
     return await db.transaction(async (tx: any) => {
@@ -53,25 +45,76 @@ export async function atomicQuotaCheckAndInsert(
       console.log('🔒 Acquiring advisory lock for user', { userId, lockId });
       await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockId})`);
       
-      const currentUsage = await tx
+      const userRecord = await tx
         .select()
-        .from(aiConversations)
-        .where(and(
-          eq(aiConversations.userId, userId),
-          gte(aiConversations.createdAt, firstOfMonth)
-        ));
-      
-      const used = currentUsage.length;
-      
-      if (used >= limit) {
-        console.log('❌ Quota exceeded during atomic check:', { userId, used, limit });
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (userRecord.length === 0) {
         return {
           success: false,
-          quotaExceeded: true,
-          used,
+          quotaExceeded: false,
+          used: 0,
           limit
         };
       }
+
+      const userData = userRecord[0];
+      const now = new Date();
+      let currentQueriesUsed = userData.queriesUsed || 0;
+      
+      if (subscriptionTier === 'free') {
+        const periodStart = userData.periodStart || userData.createdAt || now;
+        const daysSinceStart = Math.floor((now.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceStart >= 30) {
+          await tx
+            .update(users)
+            .set({
+              periodStart: now,
+              queriesUsed: 0,
+              updatedAt: now
+            })
+            .where(eq(users.id, userId));
+          currentQueriesUsed = 0;
+        }
+      } else {
+        const periodStart = userData.periodStart || userData.createdAt || now;
+        const currentMonth = now.getMonth();
+        const periodMonth = periodStart.getMonth();
+        
+        if (currentMonth !== periodMonth) {
+          const newPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          await tx
+            .update(users)
+            .set({
+              periodStart: newPeriodStart,
+              queriesUsed: 0,
+              updatedAt: now
+            })
+            .where(eq(users.id, userId));
+          currentQueriesUsed = 0;
+        }
+      }
+
+      if (currentQueriesUsed >= limit) {
+        console.log('❌ Quota exceeded during atomic check:', { userId, used: currentQueriesUsed, limit });
+        return {
+          success: false,
+          quotaExceeded: true,
+          used: currentQueriesUsed,
+          limit
+        };
+      }
+
+      await tx
+        .update(users)
+        .set({
+          queriesUsed: currentQueriesUsed + 1,
+          updatedAt: now
+        })
+        .where(eq(users.id, userId));
       
       const insertResult = await tx.insert(aiConversations).values({
         userId,
@@ -86,7 +129,7 @@ export async function atomicQuotaCheckAndInsert(
       return {
         success: true,
         quotaExceeded: false,
-        used: used + 1,
+        used: currentQueriesUsed + 1,
         limit,
         conversationId: insertResult[0]?.id
       };
@@ -107,23 +150,67 @@ export async function checkQuota(userId: string, subscriptionTier: string): Prom
   used: number;
   limit: number;
 }> {
-  const limit = getQuotaLimit(subscriptionTier);
-  
-  try {
-    const used = await getMonthlyUsage(userId);
+  const userRecord = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (userRecord.length === 0) {
     return {
-      allowed: used < limit,
-      used,
-      limit,
-    };
-  } catch (error) {
-    console.error('❌ Failed to check quota:', error);
-    return {
-      allowed: true,
+      allowed: false,
       used: 0,
-      limit,
+      limit: getQuotaLimit(subscriptionTier)
     };
   }
+
+  const userData = userRecord[0];
+  const now = new Date();
+  let currentQueriesUsed = userData.queriesUsed || 0;
+  
+  if (subscriptionTier === 'free') {
+    const periodStart = userData.periodStart || userData.createdAt || now;
+    const daysSinceStart = Math.floor((now.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysSinceStart >= 30) {
+      await db
+        .update(users)
+        .set({
+          periodStart: now,
+          queriesUsed: 0,
+          updatedAt: now
+        })
+        .where(eq(users.id, userId));
+      currentQueriesUsed = 0;
+    }
+  } else {
+    const periodStart = userData.periodStart || userData.createdAt || now;
+    const currentMonth = now.getMonth();
+    const periodMonth = periodStart.getMonth();
+    
+    if (currentMonth !== periodMonth) {
+      const newPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      await db
+        .update(users)
+        .set({
+          periodStart: newPeriodStart,
+          queriesUsed: 0,
+          updatedAt: now
+        })
+        .where(eq(users.id, userId));
+      currentQueriesUsed = 0;
+    }
+  }
+
+  const limit = getQuotaLimit(subscriptionTier);
+  
+  console.log(`🔍 Quota check for user ${userId}: ${currentQueriesUsed}/${limit} (tier: ${subscriptionTier})`);
+  
+  return {
+    allowed: currentQueriesUsed < limit,
+    used: currentQueriesUsed,
+    limit,
+  };
 }
 
 function hashUserId(userId: string): number {

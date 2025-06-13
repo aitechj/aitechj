@@ -6,6 +6,7 @@ import { shouldUseLocalStorage } from '../lib/auth/environment';
 
 export interface User {
   id: string;
+  name: string;
   email: string;
   role: string;
   subscriptionTier: string;

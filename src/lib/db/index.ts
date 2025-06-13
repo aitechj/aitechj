@@ -63,10 +63,13 @@ function createStubDb() {
 
   stubStorage.users.set('admin-user-id-12345', {
     id: 'admin-user-id-12345',
+    name: 'Admin User',
     email: 'admin@aitechj.com',
     passwordHash: bcrypt.hashSync(testAdminPassword, 12),
     roleId: 1,
     subscriptionTier: 'admin',
+    periodStart: new Date(),
+    queriesUsed: 0,
     emailVerified: true,
     isActive: true,
     createdAt: new Date(),
@@ -75,10 +78,13 @@ function createStubDb() {
 
   stubStorage.users.set('basic-user-id-12345', {
     id: 'basic-user-id-12345',
+    name: 'Basic User',
     email: 'basic@aitechj.com',
     passwordHash: bcrypt.hashSync(testBasicPassword, 12),
     roleId: 2,
     subscriptionTier: 'basic',
+    periodStart: new Date(),
+    queriesUsed: 0,
     emailVerified: true,
     isActive: true,
     createdAt: new Date(),
@@ -87,10 +93,13 @@ function createStubDb() {
 
   stubStorage.users.set('premium-user-id-12345', {
     id: 'premium-user-id-12345',
+    name: 'Premium User',
     email: 'premium@aitechj.com',
     passwordHash: bcrypt.hashSync(testPremiumPassword, 12),
     roleId: 2,
     subscriptionTier: 'premium',
+    periodStart: new Date(),
+    queriesUsed: 0,
     emailVerified: true,
     isActive: true,
     createdAt: new Date(),
@@ -112,15 +121,22 @@ function createStubDb() {
         console.log('🔍 QueryChunks length:', condition.queryChunks.length);
         
         let targetEmail: string | null = null;
+        let targetId: string | null = null;
         
         try {
           for (const chunk of condition.queryChunks) {
             if (chunk && typeof chunk === 'object' && chunk.value) {
               const value = chunk.value;
-              if (typeof value === 'string' && value.includes('@') && value.includes('.com')) {
-                targetEmail = value;
-                console.log('🔍 Found email in query chunks:', targetEmail);
-                break;
+              if (typeof value === 'string') {
+                if (value.includes('@') && value.includes('.com')) {
+                  targetEmail = value;
+                  console.log('🔍 Found email in query chunks:', targetEmail);
+                  break;
+                } else if (value.startsWith('stub_') || value.includes('-user-id-') || value.length > 10) {
+                  targetId = value;
+                  console.log('🔍 Found user ID in query chunks:', targetId);
+                  break;
+                }
               }
             }
           }
@@ -133,8 +149,16 @@ function createStubDb() {
               return matches;
             });
             console.log(`🔍 WHERE filtering ${tableName} by email: ${data.length} -> ${filteredData.length} records`);
+          } else if (targetId) {
+            filteredData = data.filter(record => {
+              const id = record.user ? record.user.id : record.id;
+              const matches = id === targetId;
+              console.log(`🔍 ID filter: ${id} === ${targetId} -> ${matches}`);
+              return matches;
+            });
+            console.log(`🔍 WHERE filtering ${tableName} by ID: ${data.length} -> ${filteredData.length} records`);
           } else {
-            console.log('🔍 No email found in query chunks, returning all records');
+            console.log('🔍 No email or ID found in query chunks, returning all records');
             filteredData = data;
           }
         } catch (error) {
