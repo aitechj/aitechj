@@ -7,6 +7,7 @@ interface QuotaData {
   used: number;
   quota: number;
   resetDate: string;
+  subscriptionTier: string;
 }
 
 interface QuotaContextType {
@@ -51,7 +52,8 @@ export function QuotaProvider({ children }: QuotaProviderProps) {
         setQuota({
           used: data.used,
           quota: data.quota,
-          resetDate: data.resetDate
+          resetDate: data.resetDate,
+          subscriptionTier: data.subscriptionTier || 'free'
         });
         
         if (shouldUseLocalStorage() && data.guestToken) {
