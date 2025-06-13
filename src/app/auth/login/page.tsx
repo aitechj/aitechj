@@ -30,7 +30,7 @@ export default function LoginPage() {
       const result = await login(formEmail, formPassword);
 
       if (result.success) {
-        window.location.href = '/admin';
+        window.location.href = '/dashboard';
       } else {
         setError(result.error || 'Login failed');
       }
