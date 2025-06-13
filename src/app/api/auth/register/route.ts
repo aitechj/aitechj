@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     const passwordHash = await hashPassword(password);
+    console.log('🔍 About to insert new user:', { name, email, roleId: guestRole[0].id });
     const newUser = await db
       .insert(users)
       .values({
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
         isActive: true,
       })
       .returning();
+    console.log('✅ User insertion completed:', { userId: newUser[0].id, name: newUser[0].name });
 
     const jwtPayload: CustomJWTPayload = {
       userId: newUser[0].id,
