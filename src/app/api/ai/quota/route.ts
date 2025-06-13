@@ -65,7 +65,8 @@ export async function GET(request: NextRequest) {
     const responseData: any = {
       used: usageCount,
       quota: limit,
-      resetDate: firstOfNextMonth().toISOString()
+      resetDate: firstOfNextMonth().toISOString(),
+      subscriptionTier: user.subscriptionTier || 'free'
     };
     
     if (guestResult && guestResult.isNewGuest) {
