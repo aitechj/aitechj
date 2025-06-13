@@ -153,10 +153,20 @@ export default function Home() {
                   placeholder="Create a password"
                   required
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  Password must contain: 8+ characters, uppercase, lowercase, number, and special character
+                </div>
               </div>
               
               {error && (
-                <div className="text-red-600 text-sm">{error}</div>
+                <div className="text-red-600 text-sm">
+                  {error}
+                  {error.includes('Password') && (
+                    <div className="mt-1 text-xs">
+                      Try: "MyPassw0rd!" or "SecureP@ss1"
+                    </div>
+                  )}
+                </div>
               )}
               
               <button
