@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
         passwordHash,
         roleId: guestRole[0].id,
         subscriptionTier: 'free',
+        periodStart: new Date(),
+        queriesUsed: 0,
         emailVerified: false,
         isActive: true,
       })
@@ -104,6 +106,13 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+
+    response.cookies.set('auth_hint', 'authenticated', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60, // 15 minutes, same as access token
     });
 
     return response;

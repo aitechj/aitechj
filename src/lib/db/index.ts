@@ -132,7 +132,8 @@ function createStubDb() {
                   targetEmail = value;
                   console.log('🔍 Found email in query chunks:', targetEmail);
                   break;
-                } else if (value.startsWith('stub_') || value.includes('-user-id-') || value.length > 10) {
+                } else if (value.startsWith('stub_') || value.includes('-user-id-') || 
+                          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
                   targetId = value;
                   console.log('🔍 Found user ID in query chunks:', targetId);
                   break;
@@ -220,7 +221,7 @@ function createStubDb() {
       values: (data: any) => ({
         returning: (fields?: any) => {
           const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
-          const id = `stub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          const id = data.id || crypto.randomUUID();
           const record = { ...data, id };
           
           console.log(`💾 Stub database inserting into ${tableName}:`, record);
@@ -238,7 +239,7 @@ function createStubDb() {
         onConflictDoNothing: () => ({
           returning: (fields?: any) => {
             const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
-            const id = `stub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const id = data.id || crypto.randomUUID();
             const record = { ...data, id };
             
             console.log(`💾 Stub database inserting (on conflict do nothing) into ${tableName}:`, record);
@@ -312,7 +313,7 @@ function createStubDb() {
             values: (data: any) => ({
               returning: (fields?: any) => {
                 const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
-                const id = `stub_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const id = data.id || crypto.randomUUID();
                 const record = { ...data, id };
                 
                 console.log(`💾 Stub transaction inserting into ${tableName}:`, record);
@@ -330,7 +331,7 @@ function createStubDb() {
               onConflictDoNothing: () => ({
                 returning: (fields?: any) => {
                   const tableName = table?.[Symbol.for('drizzle:Name')] || table?._.name || table?._?.name || 'unknown';
-                  const id = `stub_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                  const id = data.id || crypto.randomUUID();
                   const record = { ...data, id };
                   
                   console.log(`💾 Stub transaction inserting (on conflict do nothing) into ${tableName}:`, record);
