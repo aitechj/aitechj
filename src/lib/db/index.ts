@@ -227,7 +227,7 @@ function createStubDb() {
           console.log(`💾 Stub database inserting into ${tableName}:`, record);
           
           if (tableName === 'users') {
-            stubStorage.users.set(data.id || id, record);
+            stubStorage.users.set(id, record);
           } else if (tableName === 'ai_conversations') {
             stubStorage.aiConversations.set(id, record);
           } else if (tableName === 'user_roles') {
@@ -245,8 +245,8 @@ function createStubDb() {
             console.log(`💾 Stub database inserting (on conflict do nothing) into ${tableName}:`, record);
             
             if (tableName === 'users') {
-              if (!stubStorage.users.has(data.id)) {
-                stubStorage.users.set(data.id || id, record);
+              if (!stubStorage.users.has(id)) {
+                stubStorage.users.set(id, record);
               }
             } else if (tableName === 'ai_conversations') {
               stubStorage.aiConversations.set(id, record);
@@ -319,7 +319,7 @@ function createStubDb() {
                 console.log(`💾 Stub transaction inserting into ${tableName}:`, record);
                 
                 if (tableName === 'users') {
-                  stubStorage.users.set(data.id || id, record);
+                  stubStorage.users.set(id, record);
                 } else if (tableName === 'ai_conversations') {
                   stubStorage.aiConversations.set(id, record);
                 } else if (tableName === 'user_roles') {
@@ -337,8 +337,8 @@ function createStubDb() {
                   console.log(`💾 Stub transaction inserting (on conflict do nothing) into ${tableName}:`, record);
                   
                   if (tableName === 'users') {
-                    if (!stubStorage.users.has(data.id)) {
-                      stubStorage.users.set(data.id || id, record);
+                    if (!stubStorage.users.has(id)) {
+                      stubStorage.users.set(id, record);
                     }
                   } else if (tableName === 'ai_conversations') {
                     stubStorage.aiConversations.set(id, record);
