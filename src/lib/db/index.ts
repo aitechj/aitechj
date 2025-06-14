@@ -55,14 +55,17 @@ function createStubDb() {
       permissions: JSON.stringify(['read'])
     });
 
-    const testAdminPassword = process.env.TEST_ADMIN_PASSWORD;
-    const testBasicPassword = process.env.TEST_BASIC_PASSWORD;
-    const testPremiumPassword = process.env.TEST_PREMIUM_PASSWORD;
+    const testAdminPassword = process.env.TEST_ADMIN_PASSWORD || 'Admin123!';
+    const testBasicPassword = process.env.TEST_BASIC_PASSWORD || 'Basic123!';
+    const testPremiumPassword = process.env.TEST_PREMIUM_PASSWORD || 'Premium123!';
 
-    if (!testAdminPassword || !testBasicPassword || !testPremiumPassword) {
-      console.warn('⚠️ Test user passwords not configured via environment variables');
-      console.warn('⚠️ Skipping test user seeding - users will need to be created via other means');
-    } else {
+    console.log('🔧 Stub database seeding with test users');
+    console.log('🔧 Using environment variables:', {
+      hasAdminPassword: !!process.env.TEST_ADMIN_PASSWORD,
+      hasBasicPassword: !!process.env.TEST_BASIC_PASSWORD,
+      hasPremiumPassword: !!process.env.TEST_PREMIUM_PASSWORD,
+      usingFallbacks: !process.env.TEST_ADMIN_PASSWORD || !process.env.TEST_BASIC_PASSWORD || !process.env.TEST_PREMIUM_PASSWORD
+    });
 
     stubStorage.users.set('admin-user-id-12345', {
       id: 'admin-user-id-12345',
@@ -108,7 +111,6 @@ function createStubDb() {
       createdAt: new Date(),
       updatedAt: new Date()
     });
-    }
 
     stubInitialized = true;
     console.log('🌱 Stub database pre-seeded with test users and roles');
