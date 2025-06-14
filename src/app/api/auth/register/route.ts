@@ -13,9 +13,12 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  console.log('🔍 Registration API called in production');
   try {
     const body = await request.json();
+    console.log('📝 Parsed body:', { name: body.name, email: body.email, hasPassword: !!body.password });
     const { name, email, password } = registerSchema.parse(body);
+    console.log('✅ Schema validation passed for email:', email);
 
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
@@ -53,6 +56,7 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await hashPassword(password);
     console.log('🔍 About to insert new user:', { name, email, roleId: guestRole[0].id });
+    console.log('🔍 Guest role found:', { id: guestRole[0].id, name: guestRole[0].name });
     const newUser = await db
       .insert(users)
       .values({
@@ -77,9 +81,11 @@ export async function POST(request: NextRequest) {
       subscriptionTier: 'free',
     };
 
+    console.log('🔐 Creating tokens for user:', newUser[0].id);
     const accessToken = await signJWT(jwtPayload, '15m');
     const refreshToken = await generateRefreshToken();
     await storeRefreshToken(newUser[0].id, refreshToken);
+    console.log('✅ Tokens created and stored successfully');
 
     const response = NextResponse.json(
       {
@@ -96,6 +102,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
 
+    console.log('🍪 Setting access_token cookie');
     response.cookies.set('access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -103,6 +110,7 @@ export async function POST(request: NextRequest) {
       maxAge: 15 * 60, // 15 minutes
     });
 
+    console.log('🍪 Setting refresh_token cookie');
     response.cookies.set('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -110,16 +118,19 @@ export async function POST(request: NextRequest) {
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
-    response.cookies.set('auth_hint', 'authenticated', {
+    console.log('🍪 Setting auth_hint cookie');
+    response.cookies.set('auth_hint', 'true', {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 15 * 60, // 15 minutes, same as access token
     });
 
+    console.log('✅ Registration successful, returning response');
     return response;
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('🔥 Registration failed with error:', error);
+    console.error('🔥 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
