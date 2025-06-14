@@ -30,7 +30,7 @@ const stubStorage = {
 function createStubDb() {
   const bcrypt = require('bcryptjs');
 
-  // Clear and reseed on every call
+  // Always reseed at runtime
   stubStorage.users.clear();
   stubStorage.userRoles.clear();
   stubStorage.aiConversations.clear();
@@ -113,9 +113,8 @@ function createStubDb() {
 
   console.log('🌱 Stub database pre-seeded with test users and roles');
 
-  // Return your full stub DB API exactly as you had before
   return {
-    select: (fields?: any) => ({
+    select: () => ({
       from: (table: any) => {
         const tableName = table?._?.name || 'unknown';
         if (tableName === 'users') {
@@ -128,7 +127,7 @@ function createStubDb() {
         return Promise.resolve([]);
       }
     }),
-    // You can add insert, update, delete, etc. as per your original code
+    // You can add your original insert, update, delete, transaction methods here if needed
   };
 }
 
@@ -137,4 +136,23 @@ function createRealDb(url: string) {
     const client = postgres(url, {
       prepare: false,
       max: 1,
-      idle_timeout: 2_
+      idle_timeout: 20,
+      max_lifetime: 60 * 30,
+      connect_timeout: 10
+    });
+    return drizzle(client, { schema });
+  } catch (error) {
+    console.warn('Failed to create database connection, using stub:', error);
+    return createStubDb();
+  }
+}
+
+if (useStubDb || isBuildTime || !databaseUrl) {
+  console.warn('⚠️ Using stub database');
+  db = createStubDb();
+} else {
+  db = createRealDb(databaseUrl);
+}
+
+export { client, db };
+export * from './schema';
