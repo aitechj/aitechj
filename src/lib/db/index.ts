@@ -179,11 +179,19 @@ function createStubDb() {
       return createQueryChain(tableName, filteredData, newConditions);
     },
     leftJoin: (joinTable: any, condition: any) => {
+      console.log(`🔍 LEFT JOIN called - tableName: ${tableName}`);
+      console.log(`🔍 LEFT JOIN called - joinTable:`, joinTable);
       const joinedData = data.map(record => {
         let joinedRecord = null;
-        if (tableName === 'users' && condition?.left?.name === 'roleId') {
+        if (tableName === 'users' && joinTable && joinTable.id && joinTable.id.uniqueName && joinTable.id.uniqueName.includes('user_roles')) {
+          console.log(`🔍 LEFT JOIN MATCHED - processing users -> userRoles join`);
           const roleData = Array.from(stubStorage.userRoles.values());
-          joinedRecord = roleData.find(role => role.id === record.roleId) || null;
+          console.log(`🔍 LEFT JOIN debug - record.roleId: ${record.roleId} (type: ${typeof record.roleId})`);
+          console.log(`🔍 LEFT JOIN debug - available roles:`, roleData.map(r => `id: ${r.id} (type: ${typeof r.id}), name: ${r.name}`));
+          joinedRecord = roleData.find(role => Number(role.id) === Number(record.roleId)) || null;
+          console.log(`🔍 LEFT JOIN debug - found role:`, joinedRecord);
+        } else {
+          console.log(`🔍 LEFT JOIN NOT MATCHED - tableName: ${tableName}, joinTable._.name: ${joinTable?._ ? joinTable._.name : 'undefined'}`);
         }
         return { user: record, role: joinedRecord };
       });
