@@ -5,14 +5,14 @@
     }
   },
   "env": {
-    "USE_STUB_DB": "true",
+    "USE_STUB_DB": "false",
     "TEST_ADMIN_PASSWORD": "admin123",
     "TEST_BASIC_PASSWORD": "basic123",
     "TEST_PREMIUM_PASSWORD": "premium123"
   },
   "build": {
     "env": {
-      "USE_STUB_DB": "true",
+      "USE_STUB_DB": "false",
       "TEST_ADMIN_PASSWORD": "admin123",
       "TEST_BASIC_PASSWORD": "basic123",
       "TEST_PREMIUM_PASSWORD": "premium123"
